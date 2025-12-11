@@ -32,3 +32,29 @@ class SimpleCSVLoader(Preprocessor):
         y = pd.DataFrame()
 
         return X, y
+
+
+#2) Rimuovere colonne non di interesse secondo la traccia.
+class ColumnDropper(Preprocessor):
+
+    def __init__(self, columns_to_remove: Tuple[str]):
+        """I parametri di columns_to_remove sono una lista di stringhe con i nomi
+        delle colonne da cancellare."""
+        self.columns_to_remove = columns_to_remove
+
+    def preprocess(self, data_path: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        # Carico il dataset
+        df = pd.read_csv(data_path)
+
+        #Elimino le colonne.
+        #Se ne elimino una che non esiste mi restituisce 'ignore'.
+        df_cleaned = df.drop(columns=self.columns_to_remove, errors='ignore')
+
+        #Restituisce il dataframe pulito.
+        X = df_cleaned
+        #y è ancora vuoto.
+        y = pd.DataFrame()
+
+        return X, y
+
+
