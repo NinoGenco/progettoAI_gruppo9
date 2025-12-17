@@ -22,6 +22,7 @@ class DistanceFactory(ABC):
         :return: Istanza di una sottoclasse di DistanceStrategy
         :raises ValueError: Se la metrica richiesta non è supportata"""
 
+        # Normalizzazione dell'input: rimuove spazi e converte in minuscolo
         clean_name = metric_name.lower().strip()
 
         if clean_name == 'euclidian' or clean_name == 'euclidean':
@@ -30,6 +31,6 @@ class DistanceFactory(ABC):
             raise ValueError(f"La metrica '{metric_name}' non è supportata o non esiste.")
 
     """ La funzione di calcolo non è inclusa nella Factory per rispettare il principio 
-        di singola responsabilità. Istanziare la strategia una sola volta nel 
-        costruttore del KNN, anziché ripetutamente all'interno dei cicli di predizione, 
-        previene il degrado delle prestazioni dovuto all'overhead di creazione degli oggetti. """
+    di singola responsabilità. Istanziare la strategia una sola volta nel 
+    costruttore del KNN, anziché ripetutamente all'interno dei cicli di predizione, 
+    previene il degrado delle prestazioni dovuto all'overhead di creazione degli oggetti."""
