@@ -5,8 +5,8 @@ import numpy as np
 from Preprocessing.Preprocessor import Preprocessor
 
 class PreprocessorImpl(Preprocessor):
-    """
-    Implementazione del Preprocessor conforme alla traccia del corso.
+
+    """ Implementazione del Preprocessor conforme alla traccia del corso.
 
     Dataset: Wisconsin Breast Cancer (Original)
 
@@ -26,8 +26,7 @@ class PreprocessorImpl(Preprocessor):
     - nessuna normalizzazione
     - nessuna standardizzazione
     - target NON modificato (rimane 2 / 4)
-    - ordine delle righe invariato
-    """
+    - ordine delle righe invariato """
 
     def __init__(self):
 
