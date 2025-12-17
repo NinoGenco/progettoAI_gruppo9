@@ -2,6 +2,7 @@ from collections import Counter
 import numpy as np
 import random
 
+# Importazione della Factory per la creazione della metrica di distanza
 from KNNAlgorithm.CalculateDistance.Factory.DistanceFactory import DistanceFactory
 
 class KnnAlgorithm:
@@ -23,9 +24,11 @@ class KnnAlgorithm:
         if k <= 0:
             raise ValueError("Il valore di k deve essere un intero positivo.")
 
-        self.X_train = None
-        self.y_train = None
-        self.k = k
+        self.X_train = None  # Feature set di addestramento
+        self.y_train = None  # Etichette di addestramento
+        self.k = k  # Numero di vicini
+
+        # Dependency Injection tramite Factory: istanziata una sola volta per ottimizzare le performance
         self.distance_strategy = DistanceFactory.get_distance_metric(metric_name)
 
     def fit(self, X, y):
@@ -51,6 +54,7 @@ class KnnAlgorithm:
             raise RuntimeError("Errore: chiamare 'fit(X, y)' prima di 'predict(X_test)'.")
 
         X_test = np.array(X_test)
+        # Genera le predizioni iterando su ogni punto del test set
         predictions = [self._predict_single(x) for x in X_test]
         return np.array(predictions)
 
@@ -61,16 +65,24 @@ class KnnAlgorithm:
         Calcola le distanze, identifica i k vicini e gestisce eventuali pareggi
         tramite scelta casuale tra i vincitori."""
 
+        # Calcolo della distanza tra il punto x e tutti i punti in X_train
         distances = [self.distance_strategy.calculate(x_train, x) for x_train in self.X_train]
 
+        # np.argsort restituisce gli indici che ordinerebbero l'array (distanze crescenti)
+        # Selezioniamo i primi k indici
         k_indices = np.argsort(distances)[:self.k]
 
+        # Estrae le etichette corrispondenti ai k vicini più prossimi
         k_nearest_labels = [self.y_train[i] for i in k_indices]
 
+        # Conteggio delle frequenze delle etichette
         vote_counts = Counter(k_nearest_labels)
 
+        # Identificazione del numero massimo di voti
         max_votes = vote_counts.most_common(1)[0][1]
 
+        # Gestione pareggi: crea una lista di tutte le etichette con il punteggio massimo
         winners = [label for label, count in vote_counts.items() if count == max_votes]
 
+        # Se esiste più di un vincitore, ne sceglie uno a caso (Random Tie-breaking)
         return random.choice(winners)
