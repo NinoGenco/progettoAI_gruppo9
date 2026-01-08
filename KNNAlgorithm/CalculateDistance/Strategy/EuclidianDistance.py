@@ -6,7 +6,11 @@ Non utilizziamo la radice quadrata perchè ci interessa solo ordinare le distanz
 senza trovare i valori esatti. Inoltre così facendo eliminiamo un'operazione
 computazionale costosa per il processore."""
 
-class EuclidianDistance(DistanceStrategy):
+class EuclideanDistance(DistanceStrategy):
 
     def calculate(self, x1: np.ndarray, x2: np.ndarray) -> float:
+
+        if x1.shape != x2.shape:
+            raise ValueError("I vettori sono incompatibili perchè hanno dimensioni diverse.")
+
         return np.sum(pow(x1-x2, 2))
