@@ -10,6 +10,8 @@ class EuclideanDistance(DistanceStrategy):
 
     def calculate(self, x1: np.ndarray, x2: np.ndarray) -> float:
 
+        # Eseguo un controllo dimensionale per evitare che numpy applichi un
+        # broadcasting errato su vettori di lunghezza diversa.
         if x1.shape != x2.shape:
             raise ValueError("I vettori sono incompatibili perchè hanno dimensioni diverse.")
 
