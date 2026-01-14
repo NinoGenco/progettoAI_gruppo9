@@ -8,6 +8,9 @@ def k_fold_split_indices(n, n_splits=5, shuffle=True, seed=42):
     Crea i fold come liste di indici.
     Distribuzione bilanciata (round-robin) dopo eventuale shuffle.
     """
+    # n_splits = 5 di default è standard practice
+
+    # controlli di validità:
     if n_splits < 2:
         raise ValueError("n_splits deve essere >= 2")
     if n_splits > n:
@@ -19,6 +22,7 @@ def k_fold_split_indices(n, n_splits=5, shuffle=True, seed=42):
 
     folds = [[] for _ in range(n_splits)]
     for i, idx in enumerate(indices):
+        # Round Robin, quasi ogni fold sarà bilanciato
         folds[i % n_splits].append(idx)
 
     return folds
@@ -30,6 +34,11 @@ def mean_metrics(per_run):
     - ignora valori None (es. auc fold-level in LOO)
     - se per una chiave tutti i valori sono None -> ritorna None
     """
+
+    # in K-Fold si ottengono metriche per fold
+    # serve una media finale
+    # in LOO alcune metriche (AUC fold-level) non esistono
+
     if not per_run:
         return {}
 
@@ -37,7 +46,7 @@ def mean_metrics(per_run):
     out = {}
 
     for k in keys:
-        vals = [d[k] for d in per_run if d.get(k) is not None]
+        vals = [d[k] for d in per_run if d.get(k) is not None] # ignora i None
         out[k] = (sum(vals) / len(vals)) if vals else None
 
     return out
@@ -62,6 +71,8 @@ class KFoldEvaluation(EvaluationStrategy):
         positive_label = kwargs.get("positive_label", 4)
 
         n = len(X)
+
+        # controlli di validità:
         if n != len(y):
             raise ValueError("X e y devono avere la stessa lunghezza")
         if n < 2:
@@ -73,12 +84,15 @@ class KFoldEvaluation(EvaluationStrategy):
 
         folds = k_fold_split_indices(n, n_splits=n_splits, shuffle=shuffle, seed=seed)
 
-        per_run = []
+        # accumulatori
+        per_run = [] # metriche per fold
         y_true_all = []
         y_pred_all = []
         y_score_all = []
 
-        for fold_idx in range(n_splits):
+        for fold_idx in range(n_splits): # Ogni iterazione = un fold usato come test
+
+            # un fold per test, gli altri per training
             test_idx = folds[fold_idx]
             train_idx = [i for j in range(n_splits) if j != fold_idx for i in folds[j]]
 
@@ -88,6 +102,11 @@ class KFoldEvaluation(EvaluationStrategy):
             y_test = [y[i] for i in test_idx]
 
             if k_neighbors > len(X_train):
+
+                '''Guardia fondamentale, soprattutto per LOO:
+                in LOO len(X_train) = n-1, k non può superare i dati disponibili
+                '''
+
                 raise ValueError(
                     f"k_neighbors={k_neighbors} non può essere > del training set nel fold {fold_idx} "
                     f"(len(X_train)={len(X_train)})"
@@ -101,9 +120,16 @@ class KFoldEvaluation(EvaluationStrategy):
             if len(y_pred) != len(y_test):
                 raise RuntimeError("predict() deve ritornare una label per ogni sample di test")
 
+            # Score continuo  = NON binario + ordinabile + misura quanto il modello è convinto
+            # necessario per ROC/AUC, è un valore numerico ordinabile che misura il grado di appartenenza
+            # alla classe positiva (proporzione di vicini positivi nel KNN), permettendo di variare la soglia decisionale
+            # e costruire la curva ROC
+
             y_score = model.predict_proba(X_test, positive_label=positive_label)
 
             # ---------- accumulo globale (serve per AUC globale, e per LOO) ----------
+
+            # predizioni di tutto il dataset
             y_true_all.extend(y_test)
             y_pred_list = y_pred.tolist() if hasattr(y_pred, "tolist") else list(y_pred)
             y_pred_all.extend(y_pred_list)
@@ -112,6 +138,7 @@ class KFoldEvaluation(EvaluationStrategy):
 
             # ---------- metriche fold-level SENZA AUC se fold non binario ----------
             # calcolo confusion + metriche base sempre definite
+
             tp, tn, fp, fn = confusion_binary(y_test, y_pred_list, positive_label=positive_label)
 
             acc = safe_div(tp + tn, tp + tn + fp + fn)
