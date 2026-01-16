@@ -58,6 +58,23 @@ class KnnAlgorithm:
         predictions = [self._predict_single(x) for x in X_test]
         return np.array(predictions)
 
+    def predict_proba(self, X_test, positive_label=4):
+        if self.X_train is None or self.y_train is None:
+            raise RuntimeError("Chiamare fit(X,y) prima di predict_proba.")
+
+        X_test = np.array(X_test)
+        scores = []
+
+        for x in X_test:
+            distances = [self.distance_strategy.calculate(x_train, x) for x_train in self.X_train]
+            k_indices = np.argsort(distances)[:self.k]
+            k_nearest_labels = [self.y_train[i] for i in k_indices]
+
+            positives = sum(1 for lab in k_nearest_labels if lab == positive_label)
+            scores.append(positives / self.k)
+
+        return np.array(scores)
+
     def _predict_single(self, x):
 
         """ Logica interna per la classificazione di un singolo punto.
