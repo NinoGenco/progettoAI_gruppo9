@@ -1,113 +1,42 @@
 import os
 import sys
 
-# -------------------------------------------------------------------------
-# IMPORTAZIONI
-# -------------------------------------------------------------------------
-try:
-    from Preprocessing.Implementation.PreprocessorImpl import PreprocessorImpl
-    from KNNAlgorithm.KnnAlgorithm import KnnAlgorithm
-    from EvaluationModel.Factory.EvaluationFactory import EvaluationFactory
-except ImportError as e:
-    print(f"ERRORE DI IMPORTAZIONE: {e}")
-    print("Assicurati di eseguire questo script dalla cartella principale del progetto.")
-    sys.exit(1)
+# Assicuriamoci che Python trovi i moduli (opzionale ma consigliato)
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# Importiamo l'implementazione concreta
+from Preprocessing.Implementation.PreprocessorImpl import PreprocessorImpl
 
 def main():
-    print("============================================================")
-    print("   PROGETTO AI - CLASSIFICATORE KNN (GRUPPO 9)")
-    print("============================================================")
+    print("--- FASE 1: Preprocessing ---")
 
-    # ---------------------------------------------------------------------
-    # 1. CARICAMENTO E PULIZIA DATI
-    # ---------------------------------------------------------------------
-    print("\n[1] Caricamento Dati...")
+    # 1. Definiamo il percorso del file
+    # È importante usare os.path.join per compatibilità tra Windows/Mac/Linux
+    dataset_path = os.path.join("dati", "toy_dataset_1.csv")
 
-    # MODIFICA: Puntiamo al nuovo file (che devi aver salvato come CSV)
-    nome_file = "version_1.csv"
-    dataset_path = os.path.join("dati", nome_file)
-
-    # Verifica esistenza file
+    # Verifica di sicurezza
     if not os.path.exists(dataset_path):
-        print(f"ERRORE: File non trovato in '{dataset_path}'")
-        print(f"NOTA: Assicurati di aver convertito il file .numbers in .csv e di averlo messo nella cartella 'dati'.")
+        print(f"Errore: Il file '{dataset_path}' non esiste.")
         return
 
-    # Istanzio il preprocessore e pulisco i dati
+    # 2. Istanziamo il Preprocessor
+    # Usiamo PreprocessorImpl come definito nel tuo file
     preprocessor = PreprocessorImpl()
+
     try:
-        # Nota: Il preprocessor rimuoverà automaticamente "Blood Pressure" e "Heart Rate"
-        # presenti anche in questo nuovo dataset.
+        # 3. Eseguiamo il preprocessing
+        # Il metodo restituisce la tupla (X, y) già separate e pulite
+        print(f"Elaborazione del file: {dataset_path} ...")
         X, y = preprocessor.preprocess(dataset_path)
-        print(f"    -> Dataset caricato: {len(X)} campioni, {len(X.columns)} features.")
-    except Exception as e:
-        print(f"    -> Errore nel preprocessing: {e}")
-        return
 
-    # ---------------------------------------------------------------------
-    # 2. CONFIGURAZIONE PARAMETRI
-    # ---------------------------------------------------------------------
-    print("\n[2] Configurazione...")
-
-    try:
-        k_input = input("    -> Inserisci K (numero di vicini, default=5): ")
-        k = int(k_input) if k_input.strip() else 5
-
-        print("    -> Scegli metodo di valutazione:")
-        print("       1. Holdout (80% train - 20% test)")
-        print("       2. K-Fold Cross Validation")
-        print("       3. Leave-One-Out")
-        method_input = input("    -> Scelta (1-3, default=1): ")
-
-        method_map = {'1': 'holdout', '2': 'kfold', '3': 'loo'}
-        method_name = method_map.get(method_input.strip(), 'holdout')
-
-    except ValueError:
-        print("    -> Valore non valido. Uso impostazioni di default (K=5, Holdout).")
-        k = 5
-        method_name = 'holdout'
-
-    print(f"    -> Esecuzione con K={k} e Metodo='{method_name}'")
-
-    # ---------------------------------------------------------------------
-    # 3. ESECUZIONE ALGORITMO
-    # ---------------------------------------------------------------------
-    print("\n[3] Avvio Analisi...")
-
-    try:
-        # A. Creiamo il modello KNN
-        knn_model = KnnAlgorithm(k=k, metric_name='euclidian')
-
-        # B. Creiamo la strategia di valutazione
-        evaluator = EvaluationFactory.create(method_name)
-
-        # C. Eseguiamo la valutazione
-        results = evaluator.evaluate(model=knn_model, X=X, y=y, k_neighbors=k)
+        # 4. Verifica dei risultati (Feedback per l'utente)
+        print("Preprocessing completato con successo!")
+        print(f" -> Dimensioni Feature (X): {X.shape}")     # (Righe, Colonne)
+        print(f" -> Dimensioni Target (y):  {y.shape[0]}")
+        print(f" -> Feature estratte: {list(X.columns)}")   # Nomi delle colonne
 
     except Exception as e:
-        print(f"\nERRORE CRITICO DURANTE L'ESECUZIONE:\n{e}")
-        return
-
-    # ---------------------------------------------------------------------
-    # 4. STAMPA RISULTATI
-    # ---------------------------------------------------------------------
-    print("\n============================================================")
-    print("                     RISULTATI FINALI")
-    print("============================================================")
-
-    metrics = results.get("mean", {})
-
-    print(f"Metodo utilizzato: {results.get('method', 'N/A').upper()}")
-    print("-" * 30)
-    print(f"Accuracy:    {metrics.get('accuracy', 0):.4f}")
-    print(f"Sensitivity: {metrics.get('sensitivity', 0):.4f}")
-    print(f"Specificity: {metrics.get('specificity', 0):.4f}")
-    print(f"G-Mean:      {metrics.get('gmean', 0):.4f}")
-    print(f"AUC:         {metrics.get('auc', 0):.4f}")
-    print("-" * 30)
-    print("Analisi completata con successo.")
-
+        print(f"Errore durante il preprocessing: {e}")
 
 if __name__ == "__main__":
     main()
