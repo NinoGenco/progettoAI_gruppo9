@@ -174,6 +174,32 @@ class KFoldEvaluation(EvaluationStrategy):
         global_m = metrics_binary(y_true_all, y_pred_all, y_score_all, positive_label=positive_label)
         mean_m["auc"] = global_m["auc"]
 
+        # ---------- metriche GLOBALI (micro-average) ----------
+        tp_g, tn_g, fp_g, fn_g = confusion_binary(y_true_all, y_pred_all, positive_label=positive_label)
+
+        acc_g = safe_div(tp_g + tn_g, tp_g + tn_g + fp_g + fn_g)
+        err_g = 1.0 - acc_g
+        sens_g = safe_div(tp_g, tp_g + fn_g)
+        spec_g = safe_div(tn_g, tn_g + fp_g)
+        gmean_g = (sens_g * spec_g) ** 0.5
+
+        # AUC globale (già lo fai)
+        global_m = metrics_binary(y_true_all, y_pred_all, y_score_all, positive_label=positive_label)
+
+        # Sovrascrivi la "mean" con la versione globale (sensata in LOO)
+        mean_m["accuracy"] = acc_g
+        mean_m["error_rate"] = err_g
+        mean_m["sensitivity"] = sens_g
+        mean_m["specificity"] = spec_g
+        mean_m["gmean"] = gmean_g
+        mean_m["auc"] = global_m["auc"]
+
+        # Se vuoi anche stampare TP/TN/FP/FN, mettili come conteggi globali
+        mean_m["tp"] = tp_g
+        mean_m["tn"] = tn_g
+        mean_m["fp"] = fp_g
+        mean_m["fn"] = fn_g
+
         return {
             "method": "kfold",
             "params": {
