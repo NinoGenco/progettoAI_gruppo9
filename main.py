@@ -2,7 +2,6 @@ import os
 import sys
 import pandas as pd
 
-# Assicuriamoci che Python trovi i moduli (opzionale ma consigliato)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from Preprocessing.Implementation.PreprocessorImpl import PreprocessorImpl
@@ -110,10 +109,10 @@ def main():
     print("\n--- FASE 2: KNNAlgorithm ---")
 
     try:
-        k_input = input("    -> Inserisci K (numero vicini, invio per default=3): ")
+        k_input = input("    -> Inserisci k (numero vicini, invio per default=3): ")
         k = int(k_input) if k_input.strip() else 3
     except ValueError:
-        print("       ! Valore non valido. Uso K=3.")
+        print("       ! Valore non valido. Uso k=3.")
         k = 3
 
     knn_model = KnnAlgorithm(k=k, metric_name="euclidian")
@@ -139,6 +138,44 @@ def main():
     # Se la scelta non è valida, usa holdout di default
     method_name = method_map.get(scelta.strip(), "holdout")
 
+    # Dizionario per i parametri extra da passare a evaluate()
+    evaluation_kwargs = {}
+
+    if method_name == "holdout":
+        while True:
+            try:
+                p_input = input("    -> Inserisci la % di dati per il Training Set (es. 70 per 70%): ")
+                valore = float(p_input)
+
+                if 1 <= valore <= 99:
+                    # Convertiamo da 70 a 0.7 perché le classi solitamente lavorano con 0.X
+                    evaluation_kwargs["train_size"] = valore / 100.0
+                    print(f"       (Impostato: {valore:.0f}% Training - {100 - valore:.0f}% Test)")
+                    break
+                else:
+                    print("       ! Il valore deve essere compreso tra 1 e 99.")
+            except ValueError:
+                print("       ! Inserire un numero valido.")
+
+    if method_name == "kfold":
+        while True:
+            try:
+                # Chiediamo K (Folds) solo per la K-Fold
+                k_folds_input = input("    -> Inserisci il numero di Folds (K) per la Cross Validation (es. 5, 10): ")
+                n_splits = int(k_folds_input)
+
+                if n_splits < 2:
+                    print("       ! Il numero di folds deve essere almeno 2. Riprova.")
+                else:
+                    evaluation_kwargs["n_splits"] = n_splits
+                    print(f"       (Impostato K-Fold con {n_splits} divisioni)")
+                    break
+            except ValueError:
+                print("       ! Valore non valido. Inserisci un numero intero.")
+
+    elif method_name == "loo":
+        print("    -> Leave-One-Out selezionato. (Il numero di fold K sarà uguale al numero di campioni).")
+
     print(f"    -> Esecuzione valutazione: {method_name.upper()} con K={k}...")
 
     try:
@@ -156,20 +193,48 @@ def main():
         results = eval_strategy.evaluate(knn_model, X_np, y_np, k_neighbors=k)
 
         print("\n=== RISULTATI VALUTAZIONE ===")
-
-        # In base alla strategia, 'mean' contiene il riassunto delle metriche
+        # Recupera il dizionario con le medie delle metriche
         metrics = results.get('mean', {})
 
         if metrics:
-            for metric, value in metrics.items():
-                if value is not None:
-                    # Formattiamo i float, lasciamo invariati gli interi (come TP, TN...)
-                    if isinstance(value, float):
-                        print(f" - {metric}: {value:.4f}")
-                    else:
-                        print(f" - {metric}: {value}")
+            # --- MENU INTERATTIVO PER SCELTA METRICA ---
+            print("\nQuale metrica vuoi analizzare?")
+            print("1. Accuracy")
+            print("2. Error Rate")
+            print("3. Sensitivity")
+            print("4. Specificity")
+            print("5. Geometric Mean")
+            print("6. AUC")
+
+            scelta_metric = input(" -> Inserisci il numero (1-6, invio per Accuracy): ")
+
+            # Mappa: Input Utente -> Chiave del dizionario results
+            metrics_map = {
+                "1": "accuracy",
+                "2": "error_rate",
+                "3": "sensitivity",
+                "4": "specificity",
+                "5": "gmean",
+                "6": "auc"
+            }
+
+            # Default su 'accuracy' se l'input non è valido o vuoto
+            selected_key = metrics_map.get(scelta_metric.strip(), "accuracy")
+
+            # --- VISUALIZZAZIONE SOLO DELLA METRICA SCELTA ---
+            valore_scelto = metrics.get(selected_key)
+
+            print(f"\n{'-' * 40}")
+            if valore_scelto is not None:
+                # Formattazione a 4 cifre decimali se è float
+                if isinstance(valore_scelto, float):
+                    print(f" >>> {selected_key.upper()}: {valore_scelto:.4f} <<<")
                 else:
-                    print(f" - {metric}: N/A")
+                    print(f" >>> {selected_key.upper()}: {valore_scelto} <<<")
+            else:
+                print(f" >>> {selected_key.upper()}: N/A (Non disponibile) <<<")
+            print(f"{'-' * 40}\n")
+
         else:
             print("Nessun risultato prodotto.")
 
