@@ -1,6 +1,7 @@
 import os
 import sys
 import pandas as pd
+import time
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -57,14 +58,73 @@ def visualizza_predizioni(knn_model, X, y, train_ratio=0.7, seed=42):
          axis=1
     )
 
-    print(results)
+    print(results.to_string())
     print("------------------------------------------------------------\n")
 
+def salva_risultati_csv(results, method_name, filename="report_performance.csv"):
+    """
+    Salva i risultati e i parametri su un file CSV compatibile con Excel.
+    Aggiunge una nuova riga al file se esiste già (Append mode).
+    Versione Robust (gestisce k vs k_neighbors e colonne mancanti).
+    """
+    # 1. Estrai metriche e parametri
+    metrics = results.get('mean', {})
+    params = results.get('params', {})
+
+    if not metrics:
+        print("Nessuna metrica da salvare.")
+        return
+
+    # 2. Unisci tutto in un unico dizionario (Dati del report)
+    row_data = {"Timestamp": time.strftime("%Y-%m-%d %H:%M:%S")}
+    row_data.update(params)
+    row_data.update(metrics)
+    row_data["Method"] = method_name
+
+    # --- FIX CRITICO: Normalizzazione nomi parametri ---
+    # K-Fold usa "k", Holdout usa "k_neighbors". Uniformiamo a "k_neighbors".
+    if "k" in row_data and "k_neighbors" not in row_data:
+        row_data["k_neighbors"] = row_data["k"]
+    # ---------------------------------------------------
+
+    # 3. Crea il DataFrame (una sola riga)
+    df = pd.DataFrame([row_data])
+
+    # 4. Ordina le colonne per averle più leggibili
+    wanted_order = ["Timestamp", "Method", "k_neighbors", "accuracy", "sensitivity", "specificity", "auc", "tp", "tn",
+                    "fp", "fn"]
+
+    # --- FIX CRITICO: Riordino Sicuro ---
+    # Prendiamo dalla lista 'wanted_order' SOLO le colonne che esistono davvero nel df
+    # Così se manca qualcosa (es. auc in certi casi), non crasha.
+    cols_to_use = [c for c in wanted_order if c in df.columns]
+
+    # Aggiungiamo le colonne extra che non sono nella lista desiderata (es. n_splits, test_size)
+    remaining_cols = [c for c in df.columns if c not in cols_to_use]
+
+    df = df[cols_to_use + remaining_cols]
+    # ------------------------------------
+
+    # 5. Salva su file (Append mode)
+    try:
+        file_exists = os.path.isfile(filename)
+
+        df.to_csv(
+            filename,
+            mode='a',
+            header=not file_exists,
+            index=False,
+            sep=';',
+            decimal=','
+        )
+        print(f"\n[FILE] Performance salvate correttamente in: '{filename}'")
+    except Exception as e:
+        print(f"\n[ERRORE] Impossibile salvare il file: {e}")
 
 def main():
     print("--- FASE 1: Preprocessing ---")
 
-    dataset_path = os.path.join("dati", "toy_dataset_1.csv")
+    dataset_path = os.path.join("dati", "version_1.csv")
 
     if not os.path.exists(dataset_path):
         print(f"Errore: Il file '{dataset_path}' non esiste.")
@@ -149,7 +209,7 @@ def main():
 
                 if 1 <= valore <= 99:
                     # Convertiamo da 70 a 0.7 perché le classi solitamente lavorano con 0.X
-                    evaluation_kwargs["train_size"] = valore / 100.0
+                    evaluation_kwargs["test_size"] = 1.0 - (valore / 100.0)
                     print(f"       (Impostato: {valore:.0f}% Training - {100 - valore:.0f}% Test)")
                     break
                 else:
@@ -195,6 +255,8 @@ def main():
         print("\n=== RISULTATI VALUTAZIONE ===")
         # Recupera il dizionario con le medie delle metriche
         metrics = results.get('mean', {})
+
+        salva_risultati_csv(results, method_name)
 
         if metrics:
             # --- MENU INTERATTIVO PER SCELTA METRICA ---
