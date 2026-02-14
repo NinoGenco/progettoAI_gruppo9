@@ -2,6 +2,8 @@ import os
 import sys
 import pandas as pd
 import time
+import matplotlib.pyplot as plt
+import numpy as np
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -120,6 +122,83 @@ def salva_risultati_csv(results, method_name, filename="report_performance.csv")
         print(f"\n[FILE] Performance salvate correttamente in: '{filename}'")
     except Exception as e:
         print(f"\n[ERRORE] Impossibile salvare il file: {e}")
+
+def salva_plot_confusion_matrix(results, method_name):
+    """
+    Genera e salva un grafico della Matrice di Confusione usando Matplotlib.
+    Salva il file come immagine PNG nella cartella 'plots'.
+    """
+    metrics = results.get('mean', {})
+    if not metrics:
+        return
+
+    # 1. Recupera i valori (gestendo il fatto che potrebbero essere float per la media k-fold)
+    tp = metrics.get("tp", 0)
+    tn = metrics.get("tn", 0)
+    fp = metrics.get("fp", 0)
+    fn = metrics.get("fn", 0)
+
+    # Arrotondiamo a 1 decimale se sono float, o intero se sono int
+    def fmt(x):
+        return round(x, 1) if isinstance(x, float) else x
+
+    # 2. Crea la matrice 2x2 organizzata per il plot
+    # Standard: Righe = Reale (Actual), Colonne = Predetto (Predicted)
+    # [ TN   FP ]
+    # [ FN   TP ]
+    cm_array = np.array([
+        [tn, fp],
+        [fn, tp]
+    ])
+
+    # 3. Setup del grafico
+    fig, ax = plt.subplots(figsize=(6, 5))
+
+    # Disegna la heatmap (cmap='Blues' usa sfumature di blu)
+    cax = ax.matshow(cm_array, cmap='Blues', alpha=0.7)
+
+    # Aggiungi la barra del colore laterale
+    fig.colorbar(cax)
+
+    # 4. Aggiungi i numeri dentro i quadrati
+    for i in range(cm_array.shape[0]):
+        for j in range(cm_array.shape[1]):
+            valore = cm_array[i, j]
+            ax.text(x=j, y=i, s=fmt(valore), va='center', ha='center', size='xx-large')
+
+    # 5. Etichette e Titoli
+    ax.set_xlabel('Classe Predetta', fontsize=12)
+    ax.set_ylabel('Classe Reale', fontsize=12)
+
+    # Imposta i tick (0 = Negativo/Benigno, 1 = Positivo/Maligno)
+    classes = ['Negativo (2)', 'Positivo (4)']
+    ax.set_xticks([0, 1])
+    ax.set_yticks([0, 1])
+    ax.set_xticklabels(classes)
+    ax.set_yticklabels(classes)
+
+    # Sposta le etichette dell'asse X in basso (di default matshow le mette in alto)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.xaxis.set_label_position('bottom')
+
+    plt.title(f'Confusion Matrix - {method_name.upper()}', fontsize=14, pad=20)
+
+    # 6. Salvataggio su file
+    # Crea la cartella 'plots' se non esiste
+    if not os.path.exists("plots"):
+        os.makedirs("plots")
+
+    # Nome file univoco con timestamp
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    filename = f"plots/cm_{method_name}_{timestamp}.png"
+
+    try:
+        plt.savefig(filename, dpi=300)  # dpi=300 per alta risoluzione
+        print(f"[PLOT] Grafico salvato in: '{filename}'")
+    except Exception as e:
+        print(f"[ERRORE] Impossibile salvare il grafico: {e}")
+    finally:
+        plt.close()  # Importante: chiude la figura per liberare memoria
 
 def main():
     print("--- FASE 1: Preprocessing ---")
@@ -257,6 +336,7 @@ def main():
         metrics = results.get('mean', {})
 
         salva_risultati_csv(results, method_name)
+        salva_plot_confusion_matrix(results, method_name)
 
         if metrics:
             # --- MENU INTERATTIVO PER SCELTA METRICA ---
