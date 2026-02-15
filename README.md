@@ -90,4 +90,30 @@ su diverse parti del dataset.
 dataset.Per ogni iterazione, il sistema isola un singolo campione come Test Set, mentre i dati rimanenti vengono
  utilizzati come Training Set. Questo processo viene ripetuto per ogni riga del dataset.
 
-5. METRICHE DELLA VALUTAZIONE.
+5. METRICHE DI VALUTAZIONE
+
+- Accuracy Rate: L'accuratezza misura la percentuale di previsioni corrette rispetto al totale delle previsioni effettuate.
+
+
+- Error Rate: Il tasso di errore misura la percentuale di previsioni errate rispetto al totale delle previsioni effettuate.
+
+
+- Sensitivity: La sensibilità misura la capacità del modello di identificare correttamente i positivi, ossia quanti veri
+positivi sono stati correttamente identificati.
+
+
+- Specificity: La specificità misura la capacità del modello di identificare correttamente i negativi, ossia quanti veri
+negativi sono stati correttamente identificati.
+
+
+- Geometric Mean: La media geometrica è una metrica che combina la sensibilità e la specificità in un unico valore,
+utilizzato per avere un indicatore equilibrato delle prestazioni del modello.
+
+6. RISULTATI
+
+Dopo l'esecuzione della valutazione, il programma produce due output principali. Il primo è un file CSV che contiene i
+valori delle metriche selezionate, calcolati in base alle predizioni effettuate dal modello. Questo file permette di
+analizzare le prestazioni del modello in modo dettagliato e quantitativo. Il secondo output è un plot della matrice di
+confusione, salvato come immagine, che fornisce una rappresentazione visiva degli errori e delle corrette classificazioni
+effettuate. Questo grafico aiuta a comprendere meglio il comportamento del modello, specialmente in presenza di classi
+sbilanciate.
