@@ -1,17 +1,24 @@
 import numpy as np
 from KNNAlgorithm.CalculateDistance.Strategy.DistanceStrategy import DistanceStrategy
 
-"""Questa classe implementa il calcolo della distanza euclidea tra due punti x1 e x2.
-Non utilizziamo la radice quadrata perchè ci interessa solo ordinare le distanze,
-senza trovare i valori esatti. Inoltre così facendo eliminiamo un'operazione
-computazionale costosa per il processore."""
-
 class EuclideanDistance(DistanceStrategy):
+
+    """ Questa classe concreta implementa la strategia di calcolo della distanza euclidea. Per ottimizzare le
+    prestazioni omettiamo la radice quadrata, in quanto ci interessa solo ordinare le distanze tra i punti,
+    senza trovare i valori esatti."""
 
     def calculate(self, x1: np.ndarray, x2: np.ndarray) -> float:
 
-        # Eseguo un controllo dimensionale per evitare che numpy applichi un
-        # broadcasting errato su vettori di lunghezza diversa.
+        """ Questa funzione calcola la somma dei quadrati delle differenze tra i componenti corrispondenti dei due
+        vettori. Inoltre include un controllo preventivo sulle dimensioni di tali vettori, in modo da garantire
+        coerenza matematica.
+
+        Parametri: x1: Primo vettore numerico (Solitamente un campione del Training Set).
+                   x2: Secondo vettore numerico (Solitamente il punto di Test Set da classificare).
+
+        Risultati: Valore numerico float che rappresenta la distanza calcolata tra x1 e x2."""
+
+        # Verifico che i vettori abbiano la stessa dimensione per evitare broadcasting errati.
         if x1.shape != x2.shape:
             raise ValueError("I vettori sono incompatibili perchè hanno dimensioni diverse.")
 
