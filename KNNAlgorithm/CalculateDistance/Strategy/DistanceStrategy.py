@@ -3,15 +3,17 @@ import numpy as np
 
 class DistanceStrategy(ABC):
 
-    """ Questa interfaccia astratta definisce il calcolo della distanza tra vettori. """
+    """ Questa interfaccia astratta definisce una modalità standard per tutte le strategie di calcolo della distanza.
+    Impone alle sottoclassi di implementare il metodo di calcolo specifico."""
 
     @abstractmethod
     def calculate(self, x1: np.ndarray, x2: np.ndarray) -> float:
 
-        """ Calcola la distanza tra due vettori.
+        """ Calcola la distanza tra due vettori n-dimensionali.
 
-        :param x1: Primo vettore (campione di addestramento).
-        :param x2: Secondo vettore (punto di test).
-        :return: Valore float che rappresenta la distanza tra i due vettori."""
+        Parametri: x1: Primo vettore numerico (Solitamente un campione del Training Set).
+                   x2 Secondo vettore numerico (Solitamente il punto di Test Set da classificare).
+
+        Risultati: Valore numerico float che rappresenta la distanza calcolata tra x1 e x2."""
 
         pass
