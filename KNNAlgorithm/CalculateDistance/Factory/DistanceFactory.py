@@ -25,7 +25,7 @@ class DistanceFactory(ABC):
         # Normalizzazione dell'input: rimuove spazi e converte in minuscolo
         clean_name = metric_name.lower().strip()
 
-        if clean_name == 'euclidian':
+        if clean_name == 'euclidian' or clean_name == 'euclidean':
             return EuclideanDistance()
         else:
             raise ValueError(f"La metrica '{metric_name}' non è supportata o non esiste.")
