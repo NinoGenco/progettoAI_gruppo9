@@ -89,7 +89,7 @@ def run_integration_test():
     try:
         #Inizializzazione
         k_val = 5
-        knn = KnnAlgorithm(k=k_val, metric_name='euclidian')
+        knn = KnnAlgorithm(k=k_val, metric_name='euclidean')
         print(f"Algoritmo inizializzato (k={k_val}).")
 
         #Addestramento

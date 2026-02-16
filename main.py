@@ -254,8 +254,8 @@ def main():
         print("       ! Valore non valido. Uso k=3.")
         k = 3
 
-    knn_model = KnnAlgorithm(k=k, metric_name="euclidian")
-    print(f"    -> Modello KNN creato (K={k}, Metrica='euclidian')")
+    knn_model = KnnAlgorithm(k=k, metric_name="euclidean")
+    print(f"    -> Modello KNN creato (K={k}, Metrica='euclidean')")
 
     visualizza_predizioni(knn_model, X, y, train_ratio=0.7, seed=42)
 

@@ -1,5 +1,5 @@
 from abc import ABC
-from KNNAlgorithm.CalculateDistance.Strategy.EuclidianDistance import EuclideanDistance
+from KNNAlgorithm.CalculateDistance.Strategy.EuclideanDistance import EuclideanDistance
 
 class DistanceFactory(ABC):
 
@@ -22,7 +22,7 @@ class DistanceFactory(ABC):
         # Pulisce il testo in input, in particolare rimuove spazi e converte tutto in minuscolo.
         clean_name = metric_name.lower().strip()
 
-        if clean_name == 'euclidian' or clean_name == 'euclidean':
+        if clean_name == 'euclidean':
             return EuclideanDistance()
         else:
             raise ValueError(f"La metrica '{metric_name}' non è supportata o non esiste.")
