@@ -37,6 +37,10 @@ class KnnAlgorithm:
         Parametri: X: Il dataset delle Feature di training.
                    y: Il vettore dei Target di training corrispondente."""
 
+        # Controlliamo se X e y hanno lo stesso numero di righe.
+        if len(X) != len(y):
+            raise ValueError("X e y devono avere la stessa lunghezza.")
+
         self.X_train = np.array(X)
         self.y_train = np.array(y)
 
