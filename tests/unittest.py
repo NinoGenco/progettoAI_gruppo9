@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from KNNAlgorithm.CalculateDistance.Strategy.EuclidianDistance import EuclideanDistance
+from KNNAlgorithm.CalculateDistance.Strategy.EuclideanDistance import EuclideanDistance
 from KNNAlgorithm.KnnAlgorithm import KnnAlgorithm
 
 
