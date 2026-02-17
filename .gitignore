@@ -9,3 +9,7 @@ __pycache__/
 
 # File di sistema per Mac
 .DS_Store
+
+# Ignora output e risultati
+plots/
+report_performance.csv
