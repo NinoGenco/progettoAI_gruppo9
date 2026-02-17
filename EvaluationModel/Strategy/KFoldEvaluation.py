@@ -5,9 +5,18 @@ import random
 
 def k_fold_split_indices(n, n_splits=5, shuffle=True, seed=42):
     """
-    Crea i fold come liste di indici.
-    Distribuzione bilanciata (round-robin) dopo eventuale shuffle.
+    Funzione: costruisce una suddivisione K-Fold del dataset sotto forma di liste di indici
+
+    Parametri:
+      - n (int): numero totale di campioni nel dataset.
+      - n_splits (int): numero di fold (K) da generare.
+      - shuffle (bool): se True, rimescola gli indici prima di distribuirli nei fold.
+      - seed (int): seme per rendere riproducibile lo shuffle
+
+    Ritorno:
+      - folds (List[List[int]]): lista di K liste, ciascuna contenente gli indici dei campioni del fold.
     """
+
     # n_splits = 5 di default è standard practice
 
     # controlli di validità:
@@ -17,12 +26,16 @@ def k_fold_split_indices(n, n_splits=5, shuffle=True, seed=42):
         raise ValueError("n_splits non può essere maggiore del numero di campioni")
 
     indices = list(range(n))
+
+    # Se Selezionato, rimescola gli indici in modo riproducibile
     if shuffle:
         random.Random(seed).shuffle(indices)
 
+    # Inizializza K contenitori vuoti (uno per fold)
+    # Assegna alla lista di shuffled indici, 'idx' una posizione 'i' e tramite il resto (i % n_splits) fa Round-Robin
+    # Garantisce fold di dimensione molto simile (differenza al più 1)
     folds = [[] for _ in range(n_splits)]
     for i, idx in enumerate(indices):
-        # Round Robin, quasi ogni fold sarà bilanciato
         folds[i % n_splits].append(idx)
 
     return folds
@@ -30,21 +43,23 @@ def k_fold_split_indices(n, n_splits=5, shuffle=True, seed=42):
 
 def mean_metrics(per_run):
     """
-    Media delle metriche sui fold.
-    - ignora valori None (es. auc fold-level in LOO)
-    - se per una chiave tutti i valori sono None -> ritorna None
+    Funzione: calcola la media delle metriche ottenute su più run/fold.
+
+    Parametri:
+      - per_run (List[dict]): lista di dizionari, uno per fold, con le metriche calcolate in quel fold.
+    Ritorno:
+      - out (dict): dizionario con le metriche mediate. Se una metrica è None in tutti i fold, resta None.
     """
 
-    # in K-Fold si ottengono metriche per fold
-    # serve una media finale
-    # in LOO alcune metriche (AUC fold-level) non esistono
-
+    # se non ci sono run, non è possibile calcolare nessuna media
     if not per_run:
         return {}
 
+    # Le chiavi sono uguali per tutti i dizionari (uno per fold)
     keys = per_run[0].keys()
     out = {}
 
+    # Per ogni metrica, fa la media ignorando i None (es. auc non definita in fold che hanno solo una tipologia di tumori, es: [4,4,4,4])
     for k in keys:
         vals = [d[k] for d in per_run if d.get(k) is not None] # ignora i None
         out[k] = (sum(vals) / len(vals)) if vals else None
@@ -55,16 +70,32 @@ def mean_metrics(per_run):
 
 class KFoldEvaluation(EvaluationStrategy):
     """
-    Strategia K-Fold Cross Validation.
-
-    kwargs:
-      - n_splits: int (default 5)
-      - shuffle: bool (default True)
-      - seed: int (default 42)
-      - positive_label: int (default 4)
+    Classe: implementa la strategia di valutazione K-Fold Cross Validation.
+    Rappresentazione interna:
+      - non mantiene stato persistente; usa variabili locali durante evaluate().
+      - produce:
+          * per_run: metriche calcolate fold per fold
+          * mean: metriche aggregate (media fold-level e/o globali, in base alla logica finale)
     """
 
     def evaluate(self, model, X, y, k_neighbors: int, **kwargs) -> dict:
+        """
+                Metodo: esegue la valutazione del modello tramite K-Fold Cross Validation.
+                Parametri:
+                  - model: classificatore (qui un k-NN) con metodi fit(), predict() e predict_proba().
+                  - X (Sequence): features del dataset (lista/array di campioni).
+                  - y (Sequence): label del dataset (lista/array di classi).
+                  - k_neighbors (int): parametro k del k-NN (numero di vicini usati dal modello).
+                  - kwargs:
+                      * n_splits (int): numero di fold K (default 5).
+                      * shuffle (bool): se True rimescola il dataset prima di splittare (default True).
+                      * seed (int): seme di shuffle per riproducibilità (default 42).
+                      * positive_label (int): etichetta considerata "positiva" per confusion/ROC (default 4).
+                Ritorno:
+                  - result (dict): dizionario con metodo, parametri, predizioni globali, metriche per fold e aggregate.
+        """
+
+        # Parametri di configurazione della cross-validation (K = n_splits)
         n_splits = kwargs.get("n_splits", 5)
         shuffle = kwargs.get("shuffle", True)
         seed = kwargs.get("seed", 42)
@@ -82,25 +113,36 @@ class KFoldEvaluation(EvaluationStrategy):
         if n_splits < 2:
             raise ValueError("n_splits deve essere >= 2")
 
+        # Costruisce la lista dei fold come indici
         folds = k_fold_split_indices(n, n_splits=n_splits, shuffle=shuffle, seed=seed)
 
-        # accumulatori
-        per_run = [] # metriche per fold
+        # Accumulatori:
+        # - per_run contiene le metriche calcolate per ogni fold
+        # - *_all accumulano tutte le predizioni complessive (utile per AUC globale e per micro-average)
+
+        per_run = []
         y_true_all = []
         y_pred_all = []
         y_score_all = []
 
-        for fold_idx in range(n_splits): # Ogni iterazione = un fold usato come test
+        # Loop principale: ogni iterazione usa un fold come test, gli altri come training
+        for fold_idx in range(n_splits):
 
-            # un fold per test, gli altri per training
+
+            # Indici di test = fold corrente
             test_idx = folds[fold_idx]
+
+            # Indici di training = unione di tutti i fold tranne quello corrente
+            # Proprietà: train_idx e test_idx sono disgiunti e coprono tutti i campioni
             train_idx = [i for j in range(n_splits) if j != fold_idx for i in folds[j]]
 
+            # Costruisce i set in base agli indici
             X_train = [X[i] for i in train_idx]
             y_train = [y[i] for i in train_idx]
             X_test = [X[i] for i in test_idx]
             y_test = [y[i] for i in test_idx]
 
+            # Guardia: in ogni fold k non può eccedere il numero di punti disponibili in training
             if k_neighbors > len(X_train):
 
                 '''Guardia fondamentale, soprattutto per LOO:
@@ -112,25 +154,36 @@ class KFoldEvaluation(EvaluationStrategy):
                     f"(len(X_train)={len(X_train)})"
                 )
 
+            # Imposta il parametro k del modello k-NN
             model.k = k_neighbors
 
+            # Addestramento sul training set del fold
             model.fit(X_train, y_train)
+
+            # Predizione delle classi sul test set del fold
             y_pred = model.predict(X_test)
 
+            # Proprietà: il modello deve produrre una predizione per ogni sample di test
             if len(y_pred) != len(y_test):
                 raise RuntimeError("predict() deve ritornare una label per ogni sample di test")
 
+            # Calcola uno score continuo per ROC/AUC:
             # Score continuo  = NON binario + ordinabile + misura quanto il modello è convinto
             # necessario per ROC/AUC, è un valore numerico ordinabile che misura il grado di appartenenza
             # alla classe positiva (proporzione di vicini positivi nel KNN), permettendo di variare la soglia decisionale
             # e costruire la curva ROC
+
 
             y_score = model.predict_proba(X_test, positive_label=positive_label)
 
             # ---------- accumulo globale (serve per AUC globale, e per LOO) ----------
 
             # predizioni di tutto il dataset
+
+            # Accumulo globale: serve per metriche globali e AUC su tutto il dataset
             y_true_all.extend(y_test)
+
+            # Normalizza y_pred e y_score a liste Python (supporta anche numpy array)
             y_pred_list = y_pred.tolist() if hasattr(y_pred, "tolist") else list(y_pred)
             y_pred_all.extend(y_pred_list)
             y_score_list = y_score.tolist() if hasattr(y_score, "tolist") else list(y_score)
@@ -141,18 +194,20 @@ class KFoldEvaluation(EvaluationStrategy):
 
             tp, tn, fp, fn = confusion_binary(y_test, y_pred_list, positive_label=positive_label)
 
+            # Metriche fold-level sempre definibili (AUC esclusa quando il fold non contiene entrambe le classi)
             acc = safe_div(tp + tn, tp + tn + fp + fn)
             err = 1.0 - acc
-            sensitivity = safe_div(tp, tp + fn)
-            specificity = safe_div(tn, tn + fp)
+            sensitivity = safe_div(tp, tp + fn) # TPR
+            specificity = safe_div(tn, tn + fp) # TNR
             gmean = (sensitivity * specificity) ** 0.5
 
-            # AUC fold-level solo se nel fold ci sono entrambe le classi
+            # AUC fold-level: definita solo se nel test set del fold sono presenti entrambe le classi
             if len(set(y_test)) == 2:
                 m_full = metrics_binary(y_test, y_pred_list, y_score_list, positive_label=positive_label)
                 auc_fold = m_full["auc"]
             else:
-                auc_fold = None  # non definita per fold non binari (LOO)
+                # Proprietà: ROC/AUC non è definita se manca una delle due classi
+                auc_fold = None
 
             per_run.append({
                 "accuracy": acc,
@@ -168,37 +223,12 @@ class KFoldEvaluation(EvaluationStrategy):
             })
 
         # ---------- mean fold-level ----------
+        # mean_metrics() ignora i None, L’AUC finale diventa la media solo dei fold validi
         mean_m = mean_metrics(per_run)
 
-        # ---------- AUC globale (sempre definita se dataset è binario) ----------
+        # ---------- AUC globale su tutte le predizioni accumulate (sempre definibile se y_true è binario)----------
         global_m = metrics_binary(y_true_all, y_pred_all, y_score_all, positive_label=positive_label)
         mean_m["auc"] = global_m["auc"]
-
-        # ---------- metriche GLOBALI (micro-average) ----------
-        tp_g, tn_g, fp_g, fn_g = confusion_binary(y_true_all, y_pred_all, positive_label=positive_label)
-
-        acc_g = safe_div(tp_g + tn_g, tp_g + tn_g + fp_g + fn_g)
-        err_g = 1.0 - acc_g
-        sens_g = safe_div(tp_g, tp_g + fn_g)
-        spec_g = safe_div(tn_g, tn_g + fp_g)
-        gmean_g = (sens_g * spec_g) ** 0.5
-
-        # AUC globale (già lo fai)
-        global_m = metrics_binary(y_true_all, y_pred_all, y_score_all, positive_label=positive_label)
-
-        # Sovrascrivi la "mean" con la versione globale (sensata in LOO)
-        mean_m["accuracy"] = acc_g
-        mean_m["error_rate"] = err_g
-        mean_m["sensitivity"] = sens_g
-        mean_m["specificity"] = spec_g
-        mean_m["gmean"] = gmean_g
-        mean_m["auc"] = global_m["auc"]
-
-        # Se vuoi anche stampare TP/TN/FP/FN, mettili come conteggi globali
-        mean_m["tp"] = tp_g
-        mean_m["tn"] = tn_g
-        mean_m["fp"] = fp_g
-        mean_m["fn"] = fn_g
 
         return {
             "method": "kfold",
