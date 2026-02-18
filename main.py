@@ -277,16 +277,12 @@ def main():
     if method_name == "kfold":
         while True:
             try:
-                # Chiediamo K, ovvero il numero di Folds.
-                k_folds_input = input("Inserisci il numero di Folds (K) per la Cross Validation (es. 5, 10): ")
+                # Chiediamo K, ovvero il numero di Folds (n_splits):
+                k_folds_input = input("Inserisci un numero intero di Folds (K ≥ 2) per la Cross Validation (es. K=5,K=10,...): ")
                 n_splits = int(k_folds_input)
+                evaluation_kwargs["n_splits"] = n_splits
+                print(f"(Impostato K-Fold con {n_splits} divisioni)")
 
-                if n_splits < 2:
-                    print("Il numero di folds deve essere almeno 2.")
-                else:
-                    evaluation_kwargs["n_splits"] = n_splits
-                    print(f"(Impostato K-Fold con {n_splits} divisioni)")
-                    break
             except ValueError:
                 print("Valore non valido. Inserisci un numero intero.")
 
