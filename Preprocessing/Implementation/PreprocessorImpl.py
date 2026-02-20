@@ -6,9 +6,7 @@ from Preprocessing.Preprocessor import Preprocessor
 
 class PreprocessorImpl(Preprocessor):
 
-    """ Implementazione del Preprocessor conforme alla traccia del corso.
-
-    Dataset: Wisconsin Breast Cancer (Original)
+    """ Implementazione del Preprocessor.
 
     Operazioni eseguite:
     - caricamento del file CSV
