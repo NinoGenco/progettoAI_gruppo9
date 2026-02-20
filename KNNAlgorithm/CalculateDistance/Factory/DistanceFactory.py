@@ -1,36 +1,28 @@
 from abc import ABC
-from KNNAlgorithm.CalculateDistance.Strategy.EuclidianDistance import EuclideanDistance
+from KNNAlgorithm.CalculateDistance.Strategy.EuclideanDistance import EuclideanDistance
 
 class DistanceFactory(ABC):
 
-    """ Factory Class per la gestione delle strategie di calcolo della distanza.
+    """ Questa classe implementa il Design Pattern 'Factory Method' per la creazione delle strategie di calcolo della distanza.
+    Serve a gestire la scelta dell'algoritmo in un unico punto del codice, semplificando il lavoro per il resto del
+    programma, il quale deve solo chiedere la metrica desiderata.
 
-    Utilizza il Design Pattern 'Factory Method' per centralizzare la creazione
-    delle metriche, garantendo flessibilità e disaccoppiamento tra il core
-    dell'algoritmo e le implementazioni matematiche specifiche."""
+    La classe non possiede variabili o dati interni da memorizzare"""
 
     @staticmethod
     def get_distance_metric(metric_name: str):
 
-        """ Restituisce un'istanza della strategia di distanza richiesta.
+        """Riceve il nome della metrica come testo e restituisce l'oggetto corrispondente pronto all'uso. Pulisce la
+        stringa ricevuta per evitare errori se l'utente scrive il nome in modo impreciso.
 
-        Il metodo normalizza l'input per evitare errori di case-sensitivity.
-        Nota: La logica di calcolo è delegata alla strategia istanziata per
-        ottimizzare le performance ed evitare istanziazioni multiple nei cicli.
+        Parametri: metric_name: La stringa che indica quale formula di distanza si vuole usare.
 
-        :param metric_name: Nome della metrica (es. 'euclidean')
-        :return: Istanza di una sottoclasse di DistanceStrategy
-        :raises ValueError: Se la metrica richiesta non è supportata"""
+        Risultati: Restituisce l'oggetto che calcola la distanza richiesta. Se il nome non è valido segnala un errore."""
 
-        # Normalizzazione dell'input: rimuove spazi e converte in minuscolo
+        # Pulisce il testo in input, in particolare rimuove spazi e converte tutto in minuscolo.
         clean_name = metric_name.lower().strip()
 
-        if clean_name == 'euclidian':
+        if clean_name == 'euclidean':
             return EuclideanDistance()
         else:
             raise ValueError(f"La metrica '{metric_name}' non è supportata o non esiste.")
-
-    """ La funzione di calcolo non è inclusa nella Factory per rispettare il principio 
-    di singola responsabilità. Istanziare la strategia una sola volta nel 
-    costruttore del KNN, anziché ripetutamente all'interno dei cicli di predizione, 
-    previene il degrado delle prestazioni dovuto all'overhead di creazione degli oggetti."""

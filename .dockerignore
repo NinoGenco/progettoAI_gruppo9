@@ -1,0 +1,19 @@
+# Ignora la cartella Git
+.git
+
+# Ignora l'ambiente virtuale locale (Docker creerà il suo ambiente)
+.venv
+venv/
+
+# Ignora i file di configurazione dell'IDE
+.idea
+.vscode
+
+# Ignora la cache di Python (i file compilati .pyc)
+__pycache__
+tests/__pycache__
+*/__pycache__
+
+# Ignora i risultati precedenti (verranno generati nuovi nel container)
+plots/*
+report_performance.csv

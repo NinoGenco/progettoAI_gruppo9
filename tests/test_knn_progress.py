@@ -38,7 +38,7 @@ def test_knn_complete_flow():
     # Qui stiamo testando la FACTORY: passando 'euclidian', la factory deve
     # restituire l'oggetto SquaredEuclidianDistanceStrategy.
     k_value = 3
-    metric = 'euclidian'
+    metric = 'euclidean'
 
     print(f"Inizializzazione KNN con k={k_value} e metrica='{metric}'...")
 
