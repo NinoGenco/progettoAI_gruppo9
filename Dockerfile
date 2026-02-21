@@ -1,25 +1,26 @@
-# 1. Usa un'immagine base di Python (versione 3.10 leggera per risparmiare spazio)
-FROM python:3.12-slim
+FROM python:3.11-slim
 
-# 2. Imposta la cartella di lavoro dentro il container a "/app"
+# working directory inside container
 WORKDIR /app
 
-# 3. Installa strumenti di sistema di base (utili per compilare librerie come Numpy/Pandas se necessario)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# 4. Copia il file requirements.txt dal tuo computer al container
-COPY requirements.txt .
-
-# 5. Installa le librerie Python elencate nel file requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 6. Copia tutto il resto del codice sorgente dal tuo computer alla cartella /app del container
+# copy project files
 COPY . .
 
-# 7. Crea la cartella 'plots' dentro il container (per assicurarsi che esista prima di scriverci)
-RUN mkdir -p plots
+# create virtual environment
+RUN python -m venv /app/.venv
 
-# 8. Comando di avvio: quando il container parte, esegue il file main.py
-CMD ["python", "main.py"]
+# activate venv
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# upgrade pip and install dependencies
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+
+# create mount points
+VOLUME /app/dati
+VOLUME /app/plots
+VOLUME /app/performances
+
+# run the project
+ENTRYPOINT ["python","main.py"]
