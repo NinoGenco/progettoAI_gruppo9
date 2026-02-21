@@ -1,4 +1,14 @@
-# AI per la classificazione di tumori
+# Progetto AI per la classificazione di tumori
+
+## INDICE
+1. [DESCRIZIONE PROGETTO]
+2. [PRE-PROCESSING]
+3. [ALGORITMO K-NN]
+4. [EVALUATION]
+5. [METRICHE DI VALUTAZIONE]
+6. [RISULTATI]
+7. [ISTRUZIONI DOCKER]
+
 
 ### 1. DESCRIZIONE  PROGETTO
 
@@ -15,6 +25,7 @@ matrici di confusione.
 Questa fase permette di trasformare i dati grezzi in un formato più pulito, strutturato ed adatto all'analisi. Il processo
 si sviluppa in diverse fasi:
 
+
 - Caricamento Dataset, vengono letti i dati da un file di input in formato CSV.
 
 
@@ -28,7 +39,7 @@ righe problematiche.
 
 
 - Gestione dei valori mancanti, le righe in cui è mancante la variabile Target vengono rimosse, mentre i valori mancanti 
-nelle Feature vengono imputati, sostituendoli con la mediana della colonna stessa. Questa decisione preserva la qauntità
+nelle Feature vengono imputati, sostituendoli con la mediana della colonna stessa. Questa decisione preserva la quantità
 di dati.
 
 
@@ -43,7 +54,7 @@ dovrà predire.
 ### 3. ALGORITMO K-NN
 
 L'algoritmo dei k-nearest neighbors (KNN) è un metodo di classificazione supervisionata, che assegna ad un nuovo dato la
-classe più frequente tra i suoi k vicini più prossimi. Le caratteristiche princiapali sono:
+classe più frequente tra i suoi k vicini più prossimi. Le caratteristiche principali sono:
 
 - Ricerca dei vicini più prossimi, per ogni punto di test viene calcolata la distanza rispetto a tutti i punti del dataset
 di training, utilizzando la strategia di distanza selezionata. Vengono cos' selezionati i k elementi più vicini.
