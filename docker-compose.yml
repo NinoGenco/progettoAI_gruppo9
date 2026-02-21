@@ -1,0 +1,14 @@
+version: '3.9'
+
+services:
+  ai-project:
+    build: .
+    container_name: ai_project
+    env_file:
+      - .env
+    volumes:
+      - ./dati:/app/dati
+      - ./plots:/app/plots
+      - ./performances:/app/performances
+    stdin_open: true
+    tty: true
