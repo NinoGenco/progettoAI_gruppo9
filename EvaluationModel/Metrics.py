@@ -147,4 +147,8 @@ def metrics_binary(y_true, y_pred, y_score, positive_label=4):
         "specificity": specificity,
         "gmean": gmean,
         "auc": auc,
+        "tp": tp,
+        "tn": tn,
+        "fp": fp,
+        "fn": fn
     }
