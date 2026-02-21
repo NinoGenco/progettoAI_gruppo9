@@ -7,16 +7,16 @@
 4. [ALGORITMO K-NN](#4-algoritmo-k-nn)
 5. [EVALUATION](#5-evaluation)
 6. [METRICHE DI VALUTAZIONE](#6-validazione-del-modello-e-metriche-calcolate)
-7. [Risultati](#7-risultati)
+7. [RISULTATI](#7-risultati)
 8. [ISTRUZIONI DOCKER](#8-docker)
-9. [Conclusione](#9-conclusione)
+9. [CONCLUSIONE](#9-conclusione)
 
 
 ### 1. INTRODUZIONE
 
 Il progetto è stato sviluppato da Antonino Genco, Andrea Nocera e Alberto Panocchi per il corso di Fondamenti di Intelligenza Artificiale (2025-2026).  
 
-### 2. DESCRIZIONE  PROGETTO
+### 2. DESCRIZIONE PROGETTO
 
 Il programma addestra e valuta le prestazioni di un classificatore di Machine Learning basato sull'algoritmo K-NN.
 L'obiettivo applicativo è la classificazione binaria di tumori benigni o maligni, a partire dalla visione di alcuni dati
@@ -145,7 +145,7 @@ Il progetto è configurato per essere eseguito all'interno di un container Docke
 #### 1. Costruire l'immagine
 Aprire il terminale nella cartella radice del progetto ed eseguire:
 
-    docker build -t progetto_ai_gruppo9 .
+    docker build -t ai_project .
 
 #### 2. Eseguire il container
 Il comando seguente avvia il container mappando le cartelle locali per permettere al programma di leggere il dataset e salvare i risultati (grafici e report) direttamente sul tuo computer.
@@ -171,7 +171,7 @@ Nota: Prima di eseguire, assicurarsi che esista un file (anche vuoto) chiamato `
 ##### Spiegazione dei volumi:
 - `-v .../dati:/app/dati`: Passa il dataset locale al container.
 - `-v .../plots:/app/plots`: Salva i grafici generati nella cartella 'plots' del tuo computer.
-- `-v .../report_performance.csv:/app/report_performance.csv`: Salva/Aggiorna il file CSV dei risultati sul tuo computer.
+- `-v ..../performances:/app/performances`: Salva/Aggiorna il file CSV dei risultati sul tuo computer.
 
 ### 9. Conclusione
 
