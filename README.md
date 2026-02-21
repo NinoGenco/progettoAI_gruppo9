@@ -1,16 +1,22 @@
 # Progetto AI per la classificazione di tumori
 
 ## INDICE
-1. [DESCRIZIONE PROGETTO]
-2. [PRE-PROCESSING]
-3. [ALGORITMO K-NN]
-4. [EVALUATION]
-5. [METRICHE DI VALUTAZIONE]
-6. [RISULTATI]
-7. [ISTRUZIONI DOCKER]
+1. [INTRODUZIONE](#1-introduzione)
+2. [DESCRIZIONE PROGETTO](#2-descrizione--progetto)
+3. [PRE-PROCESSING](#3-pre-processing)
+4. [ALGORITMO K-NN](#4-algoritmo-k-nn)
+5. [EVALUATION](#5-evaluation)
+6. [METRICHE DI VALUTAZIONE](#6-validazione-del-modello-e-metriche-calcolate)
+7. [Risultati](#7-risultati)
+8. [ISTRUZIONI DOCKER](#8-docker)
+9. [Conclusione](#9-conclusione)
 
 
-### 1. DESCRIZIONE  PROGETTO
+### 1. INTRODUZIONE
+
+Il progetto è stato sviluppato da Antonino Genco, Andrea Nocera e Alberto Panocchi per il corso di Fondamenti di Intelligenza Artificiale (2025-2026).  
+
+### 2. DESCRIZIONE  PROGETTO
 
 Il programma addestra e valuta le prestazioni di un classificatore di Machine Learning basato sull'algoritmo K-NN.
 L'obiettivo applicativo è la classificazione binaria di tumori benigni o maligni, a partire dalla visione di alcuni dati
@@ -20,7 +26,7 @@ classificazione tramite distanza Euclidea, fino alla validazione statistica (Hol
 fornisce un'analisi completa delle performance salvando automaticamente i risultati, tramite file CSV, ed i grafici delle
 matrici di confusione.
 
-### 2. PRE-PROCESSING
+### 3. PRE-PROCESSING
 
 Questa fase permette di trasformare i dati grezzi in un formato più pulito, strutturato ed adatto all'analisi. Il processo
 si sviluppa in diverse fasi:
@@ -51,7 +57,7 @@ di dati.
 contenente la matrice dei dati usata per la predizione, e Target (Y) che rappresenta la variabile di output che il modello
 dovrà predire.
 
-### 3. ALGORITMO K-NN
+### 4. ALGORITMO K-NN
 
 L'algoritmo dei k-nearest neighbors (KNN) è un metodo di classificazione supervisionata, che assegna ad un nuovo dato la
 classe più frequente tra i suoi k vicini più prossimi. Le caratteristiche principali sono:
@@ -76,7 +82,7 @@ La scelta ottimale di "k" è cruciale per bilanciare correttamente l'accuratezza
 generalizzazione. Il software include controlli di validazione per assicurare che i parametri inseriti siano corretti,
 restituendo messaggi di errore in caso di configurazioni non valide.
 
-### 4. EVALUATION
+### 5. EVALUATION
 
 Per valutare le prestazioni del classificatore, il programma implementa tre tecniche di validazione:
 
@@ -101,7 +107,7 @@ su diverse parti del dataset.
 dataset.Per ogni iterazione, il sistema isola un singolo campione come Test Set, mentre i dati rimanenti vengono
  utilizzati come Training Set. Questo processo viene ripetuto per ogni riga del dataset.
 
-### 5. METRICHE DI VALUTAZIONE
+### 6. METRICHE DI VALUTAZIONE
 
 - Accuracy Rate: L'accuratezza misura la percentuale di previsioni corrette rispetto al totale delle previsioni effettuate.
 
@@ -120,7 +126,7 @@ negativi sono stati correttamente identificati.
 - Geometric Mean: La media geometrica è una metrica che combina la sensibilità e la specificità in un unico valore,
 utilizzato per avere un indicatore equilibrato delle prestazioni del modello.
 
-### 6. RISULTATI
+### 7. RISULTATI
 
 Dopo l'esecuzione della valutazione, il programma produce due output principali. Il primo è un file CSV che contiene i
 valori delle metriche selezionate, calcolati in base alle predizioni effettuate dal modello. Questo file permette di
@@ -129,7 +135,7 @@ confusione, salvato come immagine, che fornisce una rappresentazione visiva degl
 effettuate. Questo grafico aiuta a comprendere meglio il comportamento del modello, specialmente in presenza di classi
 sbilanciate.
 
-### 7. ISTRUZIONI DOCKER
+### 8. ISTRUZIONI DOCKER
 
 Il progetto è configurato per essere eseguito all'interno di un container Docker, garantendo un ambiente isolato e riproducibile.
 
@@ -166,3 +172,10 @@ Nota: Prima di eseguire, assicurarsi che esista un file (anche vuoto) chiamato `
 - `-v .../dati:/app/dati`: Passa il dataset locale al container.
 - `-v .../plots:/app/plots`: Salva i grafici generati nella cartella 'plots' del tuo computer.
 - `-v .../report_performance.csv:/app/report_performance.csv`: Salva/Aggiorna il file CSV dei risultati sul tuo computer.
+
+### 9. Conclusione
+
+In conclusione, questo progetto offre un ambiente potente e interattivo per la classificazione dei dati medici, con un focus particolare sull'uso dell'algoritmo KNN. La struttura del progetto è progettata per garantire un'ampia flessibilità, permettendo agli utenti di personalizzare e ottimizzare il modello a seconda delle esigenze specifiche del loro dataset.  
+Ogni fase del processo, dal preprocessing dei dati all'addestramento del modello, fino alla validazione, è pensata per offrire una solida base di lavoro che consenta di ottenere risultati accurati e significativi.  
+
+Nel complesso, il progetto fornisce un workflow completo e strutturato, che aiuta non solo a sviluppare modelli di classificazione efficaci, ma anche a comprenderne a fondo il comportamento e le prestazioni. Questo è particolarmente importante in ambito medico, dove la precisione e l'affidabilità delle previsioni possono avere un impatto diretto sulla diagnosi e sul trattamento dei pazienti.
