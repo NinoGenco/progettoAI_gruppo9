@@ -1,5 +1,6 @@
 # Progetto AI per la classificazione di tumori
 
+
 ## INDICE
 1. [INTRODUZIONE](#1-introduzione)
 2. [DESCRIZIONE PROGETTO](#2-descrizione--progetto)
@@ -8,13 +9,15 @@
 5. [EVALUATION](#5-evaluation)
 6. [METRICHE DI VALUTAZIONE](#6-validazione-del-modello-e-metriche-calcolate)
 7. [RISULTATI](#7-risultati)
-8. [ISTRUZIONI DOCKER](#8-docker)
-9. [CONCLUSIONE](#9-conclusione)
+8. [ESECUZIONE DEL PROGRAMMA](#8-esecuzione del programma)
+9. [ISTRUZIONI DOCKER](#9-istruzioni-docker)
+10. [CONCLUSIONE](#10-conclusione)
 
 
 ### 1. INTRODUZIONE
 
 Il progetto è stato sviluppato da Antonino Genco, Andrea Nocera e Alberto Panocchi per il corso di Fondamenti di Intelligenza Artificiale (2025-2026).  
+
 
 ### 2. DESCRIZIONE PROGETTO
 
@@ -25,6 +28,7 @@ delle metriche sull'affidabilità del modello. Si parte dalla pulizia del datase
 classificazione tramite distanza Euclidea, fino alla validazione statistica (Holdout, K-Fold, Leave-One-Out). Il sistema
 fornisce un'analisi completa delle performance salvando automaticamente i risultati, tramite file CSV, ed i grafici delle
 matrici di confusione.
+
 
 ### 3. PRE-PROCESSING
 
@@ -57,6 +61,7 @@ di dati.
 contenente la matrice dei dati usata per la predizione, e Target (Y) che rappresenta la variabile di output che il modello
 dovrà predire.
 
+
 ### 4. ALGORITMO K-NN
 
 L'algoritmo dei k-nearest neighbors (KNN) è un metodo di classificazione supervisionata, che assegna ad un nuovo dato la
@@ -82,6 +87,7 @@ La scelta ottimale di "k" è cruciale per bilanciare correttamente l'accuratezza
 generalizzazione. Il software include controlli di validazione per assicurare che i parametri inseriti siano corretti,
 restituendo messaggi di errore in caso di configurazioni non valide.
 
+
 ### 5. EVALUATION
 
 Per valutare le prestazioni del classificatore, il programma implementa tre tecniche di validazione:
@@ -106,6 +112,7 @@ su diverse parti del dataset.
 - Leave-One-Out.  In questa strategia, il numero di folds è esattamente uguale al numero totale di campioni presenti nel
 dataset.Per ogni iterazione, il sistema isola un singolo campione come Test Set, mentre i dati rimanenti vengono
  utilizzati come Training Set. Questo processo viene ripetuto per ogni riga del dataset.
+
 
 ### 6. METRICHE DI VALUTAZIONE
 
@@ -135,9 +142,45 @@ confusione, salvato come immagine, che fornisce una rappresentazione visiva degl
 effettuate. Questo grafico aiuta a comprendere meglio il comportamento del modello, specialmente in presenza di classi
 sbilanciate.
 
-### 8. ISTRUZIONI DOCKER
+
+### 8. ESECUZIONE DEL PROGRAMMA
+
+Il punto di ingresso del programma è il file `main.py`. Il sistema utilizza `argparse` per permettere all'utente di personalizzare l'esecuzione tramite riga di comando.
+
+**Parametri disponibili:**
+- `--k`: Numero di vicini per il K-NN (default: 3)
+- `--method`: Metodo di valutazione da utilizzare. Scelte valide: `holdout`, `kfold`, `loo`
+- `--train`: Percentuale del dataset destinata al training
+- `--folds`: Numero di partizioni
+- `--datase`: Percorso del file CSV da analizzare
+
+**Esempi di esecuzione:**
+
+1. Esecuzione di default (k=3, method=holdout, train=70)
+
+    `docker compose up --> default`
+
+2. Esecuzione con Holdout (80% training, k=5):
+
+    `docker compose run ai-project --k 5 --method holdout --train 80`
+
+3. Esecuzione con K-Fold Cross Validation (10 folds, k=7):
+
+    `docker compose run ai-project --k 7 --method kfold --folds 10`
+
+4. Esecuzione con Leave-One-Out:
+
+    `docker compose run ai-project --method loo`
+
+5.  Data set personalizzato:
+
+    `docker compose run ai-project --k 5 --method holdout --train 70 --dataset dati/version_1.csv`
+    
+
+### 9. ISTRUZIONI DOCKER
 
 Il progetto è configurato per essere eseguito all'interno di un container Docker, garantendo un ambiente isolato e riproducibile.
+Oltre al comando `docker run` standard, abbiamo incluso un file `docker-compose.yml` per un'esecuzione rapida e automatizzata.
 
 #### Requisiti
 - Docker installato sulla macchina.
@@ -147,33 +190,20 @@ Aprire il terminale nella cartella radice del progetto ed eseguire:
 
     docker build -t ai_project .
 
-#### 2. Eseguire il container
-Il comando seguente avvia il container mappando le cartelle locali per permettere al programma di leggere il dataset e salvare i risultati (grafici e report) direttamente sul tuo computer.
+#### 2. Eseguire il container Docker Compose
+Con un solo comando, Docker Compose costruirà l'immagine (se necessario), mapperà in automatico i volumi (lettura da `dati/`, salvataggio in `plots/` e `performances/`) e avvierà il progetto usando i parametri definiti nel file `.env`:
 
-Nota: Prima di eseguire, assicurarsi che esista un file (anche vuoto) chiamato `report_performance.csv` nella cartella del progetto per evitare che Docker lo crei come una directory.
+    docker-compose up --build
 
-**Su Linux / Mac:**
-    touch report_performance.csv
-    docker run -it --rm \
-      -v "$(pwd)/dati":/app/dati \
-      -v "$(pwd)/plots":/app/plots \
-      -v "$(pwd)/report_performance.csv":/app/report_performance.csv \
-      progetto_ai_gruppo9
+I parametri di default (come il K o il metodo di valutazione) possono essere modificati semplicemente aprendo e modificando il file `.env` prima di lanciare il comando.
 
-**Su Windows (PowerShell):**
-    if (-not (Test-Path .\report_performance.csv)) { New-Item .\report_performance.csv -ItemType File }
-    docker run -it --rm `
-      -v ${PWD}\dati:/app/dati `
-      -v ${PWD}\plots:/app/plots `
-      -v ${PWD}\report_performance.csv:/app/report_performance.csv `
-      progettoAI_gruppo9
+##### 3. Spiegazione dei volumi utilizzati:
+- `-v .../dati:/app/dati`: Passa il dataset locale (lettura) al container.
+- `-v .../plots:/app/plots`: Permette al container di salvare i grafici generati nella cartella locale 'plots'.
+- `-v ..../performances:/app/performances`: Permette al container di salvare il file CSV dei risultati finali nella cartella locale 'performances'.
 
-##### Spiegazione dei volumi:
-- `-v .../dati:/app/dati`: Passa il dataset locale al container.
-- `-v .../plots:/app/plots`: Salva i grafici generati nella cartella 'plots' del tuo computer.
-- `-v ..../performances:/app/performances`: Salva/Aggiorna il file CSV dei risultati sul tuo computer.
 
-### 9. Conclusione
+### 10. Conclusione
 
 In conclusione, questo progetto offre un ambiente potente e interattivo per la classificazione dei dati medici, con un focus particolare sull'uso dell'algoritmo KNN. La struttura del progetto è progettata per garantire un'ampia flessibilità, permettendo agli utenti di personalizzare e ottimizzare il modello a seconda delle esigenze specifiche del loro dataset.  
 Ogni fase del processo, dal preprocessing dei dati all'addestramento del modello, fino alla validazione, è pensata per offrire una solida base di lavoro che consenta di ottenere risultati accurati e significativi.  
