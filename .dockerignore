@@ -16,4 +16,4 @@ tests/__pycache__
 
 # Ignora i risultati precedenti (verranno generati nuovi nel container)
 plots/*
-report_performance.csv
+performances/
