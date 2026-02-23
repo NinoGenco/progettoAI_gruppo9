@@ -56,7 +56,11 @@ def visualizza_predizioni(knn_model, X, y, train_ratio=0.7, seed=42):
     print(results.to_string())
 
 
-def salva_risultati_csv(results, method_name, filename="report_performance.csv"):
+def salva_risultati_csv(results, method_name, filename="performances/report_performance.csv"):
+
+    cartella = os.path.dirname(filename)
+    if cartella and not os.path.exists(cartella):
+        os.makedirs(cartella)
 
     metrics = results.get('mean', {})
     params = results.get('params', {})
