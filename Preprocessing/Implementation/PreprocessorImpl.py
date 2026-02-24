@@ -6,9 +6,10 @@ from Preprocessing.Preprocessor import Preprocessor
 
 class PreprocessorImpl(Preprocessor):
 
-    """ Implementazione del Preprocessor conforme alla traccia del corso.
+    """ Implementazione del Preprocessor.
+        Interfaccia astratta per il preprocessing del dataset.
 
-    Dataset: Wisconsin Breast Cancer (Original)
+        Seguendo questo approccio, è possibile cambiare la logica di preprocessing senza modificare il codice che utilizza il Preprocessor.
 
     Operazioni eseguite:
     - caricamento del file CSV
@@ -22,7 +23,7 @@ class PreprocessorImpl(Preprocessor):
     - forzatura dell'ordine ufficiale delle feature
     - separazione in feature (X) e target (y)
 
-    NOTE IMPORTANTI (come da traccia):
+    NOTE IMPORTANTI:
     - nessuna normalizzazione
     - nessuna standardizzazione
     - target NON modificato (rimane 2 / 4)
@@ -35,9 +36,9 @@ class PreprocessorImpl(Preprocessor):
 
         # Colonne da eliminare (ID + non previste dalla traccia)
         self.columns_to_drop = [
-            "Sample code number",
-            "Blood Pressure",
-            "Heart Rate"
+            "Sample code number",  # Identificativo (non predittivo)
+            "Blood Pressure",      # Colonna non prevista
+            "Heart Rate"           # Colonna non prevista
         ]
 
         # Rinomina colonne non standard
@@ -47,7 +48,7 @@ class PreprocessorImpl(Preprocessor):
             "bareNucleix_wrong": "Bare Nuclei"
         }
 
-        # Ordine ufficiale delle feature (TRACCIA DEL CORSO)
+        # Ordine ufficiale delle feature (TRACCIA DEL CORSO), serve a garantire coerenza nell'input del modello
         self.ordered_features = [
             "Clump Thickness",
             "Uniformity of Cell Size",
@@ -78,42 +79,43 @@ class PreprocessorImpl(Preprocessor):
         # 2. Rinomina colonne non standard
         df = df.rename(columns=self.columns_rename)
 
-        # 3. Rimozione colonne non richieste
+        # 3. Rimozione colonne non richieste solo se effettivamente presenti
         df = df.drop(
             columns=[col for col in self.columns_to_drop if col in df.columns]
         )
 
-        # 4. Pulizia valori non numerici
+        # 4. Pulizia valori non numerici; sostituisco virgola con punto e converte '?' in NaN
         for col in df.columns:
             if df[col].dtype == object:
                 df[col] = (
                     df[col]
-                    .astype(str)
-                    .str.replace(",", ".", regex=False)
-                    .replace("?", np.nan)
+                    .astype(str)    #Forza la conversione a stringa
+                    .str.replace(",", ".", regex=False)     #Normalizza formato decimale
+                    .replace("?", np.nan)       #Sostituisce placeholder con NaN
                 )
 
-        # 5. Conversione a numerico
+        # 5. Conversione a numerico, gli errori residui vengono trasformati in NaN
         df = df.apply(pd.to_numeric, errors="coerce")
 
         # 6. Eliminazione righe con target mancante
         df = df.dropna(subset=[self.target_column])
 
-        # 7. Imputazione valori mancanti sulle FEATURE
+        # 7. Imputazione valori mancanti SOLO sulle FEATURE, utilizzo la MEDIANA
         for col in self.ordered_features:
             df[col] = df[col].fillna(df[col].median())
 
         # 8. Vincolo dominio feature [1, 10]
+        # - Arrotonda i valori, limita intervallo, converte a intero mantenendo la natura originale del dataset
         for col in self.ordered_features:
             df[col] = (
                 df[col]
-                .round()
-                .clip(1, 10)
-                .astype(int)
+                .round()    #Arrotondamento
+                .clip(1, 10)    #Vincolo dominio
+                .astype(int)    #Conversione a intero
             )
 
-        # 9. Separazione X e y + ordine colonne
+        # 9. Separazione tra feature (X) e target (y) + ordine colonne
         X = df[self.ordered_features]
         y = df[self.target_column]
 
-        return X, y
+        return X, y #Restitutisce il dataset pronto per il classificatore
