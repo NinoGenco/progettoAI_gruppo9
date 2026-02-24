@@ -85,17 +85,8 @@ class KnnAlgorithm:
         scores = []
 
         for x in X_test:
-            # Calcoliamo le distanze verso tutti i punti di training.
-            distances = []
-            for x_train in self.X_train:
-                d = self.distance_strategy.calculate(x_train, x)
-                distances.append(d)
-
-            # Troviamo gli indici dei k valori più piccoli.
-            k_indices = np.argsort(distances)[:self.k]
-
-            #Prendiamo le etichette di questi vicini.
-            k_nearest_labels = [self.y_train[i] for i in k_indices]
+            # Otteniamo direttamente le etichette dei vicini con il nuovo helper
+            k_nearest_labels = self._get_k_nearest_labels(x)
 
             # Contiamo quanti sono 'positivi'.
             positive_count = 0
@@ -108,26 +99,33 @@ class KnnAlgorithm:
 
         return np.array(scores)
 
-    def _predict_single(self, x):
+    def _get_k_nearest_labels(self, x):
+        """Calcola la distanza e restituisce le etichette dei k vicini più prossimi.
 
-        """Gestisce la logica interna per la classificazione di un singolo punto. Calcola le distanze, trova i k vicini
-        e la classe più frequente, con gestione casuale dei pareggi.
+        Parametri: x: Vettore numerico che rappresenta un campione di test da confrontare.
 
-        Parametri: x: Singolo vettore da classificare.
-
-        Risultati: Restituisce l'etichetta della classe vincitrice."""
-
-        # Calcolo della distanza tra il punto x e tutti i punti memorizzati in X_train.
+        Risultati: Lista contenente le etichette dei k campioni di addestramento più vicini."""
         distances = []
         for x_train in self.X_train:
             dist = self.distance_strategy.calculate(x_train, x)
             distances.append(dist)
 
-        # Restituisce gli indici ordinati per distanza crescente, prendiamo i primi k.
+        # Troviamo gli indici dei k valori più piccoli.
         k_indices = np.argsort(distances)[:self.k]
 
-        # Estrae le etichette corrispondenti ai k vicini più prossimi.
-        k_nearest_labels = [self.y_train[i] for i in k_indices]
+        # Restituiamo le etichette di questi vicini.
+        return [self.y_train[i] for i in k_indices]
+
+    def _predict_single(self, x):
+
+        """Gestisce la logica interna per la classificazione di un singolo punto, con gestione casuale dei pareggi.
+
+        Parametri: x: Vettore numerico che rappresenta un campione di test da classificare.
+
+        Risultati: Restituisce l'etichetta della classe vincitrice."""
+
+        # Sfruttiamo il metodo helper per ottenere le etichette dei vicini
+        k_nearest_labels = self._get_k_nearest_labels(x)
 
         # Conteggio delle frequenze delle etichette per determinare la maggioranza.
         vote_counts = Counter(k_nearest_labels)
