@@ -130,31 +130,41 @@ def salva_risultati_csv(results, method_name, filename="performances/report_perf
 
 def salva_plot_confusion_matrix(results, method_name):
 
-    dati = results.get('mean', {})
-    if not dati:
+    """Questa funzione disegna graficamente la Matrice di Confusione e la salva in formato PNG.
+
+    Parametri:
+              results -> Dizionario con i risultati, dal quale vengono estratti i Veri Positivi, Veri Negativi ecc.
+              method_name -> Nome della strategia di valutazione, usato per generare il titolo del grafico."""
+
+    dati = results.get('mean', {}) # Estraggo le metriche dal dizionario.
+
+    if not dati: #Se non ci sono dati blocco il programma.
         return
 
-    tp = dati.get("tp", 0)
-    tn = dati.get("tn", 0)
-    fp = dati.get("fp", 0)
-    fn = dati.get("fn", 0)
+    # Passo i parametri tp, tn, fp, fn necessari per costruire la matrice.
+    tp = dati.get("tp", 0) # True Positive.
+    tn = dati.get("tn", 0) # True Negative.
+    fp = dati.get("fp", 0) # False Positive.
+    fn = dati.get("fn", 0) # False Negative.
 
+    # Costruisco la matrice di confusione con dimensione 2x2.
     matrice = np.array([
         [tn, fp],
         [fn, tp]
     ])
 
-    plt.figure(figsize=(6, 5))
-    plt.imshow(matrice, cmap='Blues', alpha=0.8)
+    plt.figure(figsize=(6, 5)) # Inizializzo una figura per il plot con dimensioni specifiche.
+    plt.imshow(matrice, cmap='Blues', alpha=0.8) # Specifiche sulle caratteristiche dell'immagine.
 
+    # Doppio ciclo per inserire il valore testuale al centro di ogni cella della matrice.
     for i in range(2):
         for j in range(2):
             plt.text(j, i, str(matrice[i, j]),
                      ha='center', va='center', fontsize=14)
 
-    plt.title(f"Matrice di Confusione - {method_name}")
-    plt.xlabel("Classe Predetta")
-    plt.ylabel("Classe Reale")
+    plt.title(f"Matrice di Confusione - {method_name}") # Aggiungo il nome del titolo.
+    plt.xlabel("Classe Predetta") # Aggiungo il nome dell'asse x.
+    plt.ylabel("Classe Reale") # Aggiungo il nome dell'asse y.
 
     etichette = ['Negativo (2)', 'Positivo (4)']
     plt.xticks([0, 1], etichette)
@@ -162,13 +172,13 @@ def salva_plot_confusion_matrix(results, method_name):
     plt.colorbar()
 
     if not os.path.exists("plots"):
-        os.makedirs("plots")
+        os.makedirs("plots") # Controlla e crea la cartella 'plots' se mancante.
 
     orario = time.strftime("%H%M%S")
     nome_file = f"plots/cm_{method_name}_{orario}.png"
 
     try:
-        plt.savefig(nome_file)
+        plt.savefig(nome_file) # Salvo l'immagine.
         print(f"[PLOT] Grafico salvato correttamente: {nome_file}")
     except Exception as e:
         print(f"Errore nel salvare il grafico: {e}")
@@ -178,8 +188,12 @@ def salva_plot_confusion_matrix(results, method_name):
 
 def main():
 
+    """ Questa funzione gestisce il parsing degli argomenti CLI forniti dall'utente, richiama il Preprocessing, instanzia
+    l'algoritmo KNN, esegue le valutazioni tramite Factory Pattern ed infine richiama le funzioni per salvare e visualizzare i report."""
+
     parser = argparse.ArgumentParser(description="KNN Classification Pipeline")
 
+    # Configurazione di tutte le opzioni accettate da riga di comando, ad esempio --k, --method, etc.
     parser.add_argument("--k", type=int, default=3,
                         help="Numero di vicini per KNN (default=3)")
 
@@ -197,58 +211,66 @@ def main():
                         default=os.path.join("dati", "version_1.csv"),
                         help="Percorso dataset")
 
-    args = parser.parse_args()
+    args = parser.parse_args() # Convalido e memorizzo gli argomenti forniti dall'utente.
 
     print("\n--- FASE 1: Preprocessing ---")
 
     dataset_path = args.dataset
 
+    # Gestisco il caso in cui non è presente il file del dataset nel percorso specificato.
     if not os.path.exists(dataset_path):
+        # Blocco il programma stampando un messaggio di errore.
         print(f"Errore: Il file '{dataset_path}' non esiste.")
         return
 
-    preprocessor = PreprocessorImpl()
+    preprocessor = PreprocessorImpl() # Chiamo la classe incaricata della pulizia dei dati.
 
     try:
         print(f"Elaborazione del file: {dataset_path} ...")
-        X, y = preprocessor.preprocess(dataset_path)
+        X, y = preprocessor.preprocess(dataset_path) # Estraggo le features (X) ed i target (y) puliti.
 
-        X = X.reset_index(drop=True)
-        y = y.reset_index(drop=True).astype(int)
+        X = X.reset_index(drop=True) # Resetto l'indice per evitare inconsistenze nei successivi accessi per posizione.
+        y = y.reset_index(drop=True).astype(int) # Accerto che le label siano numeri interi.
 
         print("Preprocessing completato!")
         print(f"Feature shape: {X.shape}")
 
+    # Gestisco possibili errori.
     except Exception as e:
+        # Blocco il programma stampando un messaggio di errore.
         print(f"Errore durante il preprocessing: {e}")
         return
 
     print("\n--- FASE 2: KNN ---")
 
+    # Creo il modello KNN usando i parametri dell'utente.
     k = args.k
     knn_model = KnnAlgorithm(k=k, metric_name="euclidean")
 
-    visualizza_predizioni(knn_model, X, y)
+    visualizza_predizioni(knn_model, X, y) # Richiamo il test rapido per verificare che l'algoritmo impari.
 
     print("\n--- FASE 3: Evaluation ---")
 
     method_name = args.method
-    evaluation_kwargs = {}
+    evaluation_kwargs = {} # Creo un dizionario vuoto in cui inserire gli argomenti specifici per la strategia scelta.
 
+    # Imposto i parametri necessari a seconda se l'utente ha scelto Holdout, K-Fold o Leave-One-Out.
     if method_name == "holdout":
-        evaluation_kwargs["test_size"] = 1.0 - (args.train / 100.0)
+        evaluation_kwargs["test_size"] = 1.0 - (args.train / 100.0) # Converto la percentuale in una frazione per il test.
         print(f"Holdout: {args.train}% training")
 
     elif method_name == "kfold":
-        evaluation_kwargs["n_splits"] = args.folds
+        evaluation_kwargs["n_splits"] = args.folds # Passo il numero di fold scelto.
         print(f"KFold: {args.folds} folds")
 
     elif method_name == "loo":
         print("Leave-One-Out selezionato")
 
     try:
+        # Uso il Factory Pattern per creare la strategia di validazione corretta.
         eval_strategy = EvaluationFactory.create(method_name)
 
+        # Delego l'intera esecuzione dell'esperimento alla strategia estratta dalla Factory.
         results = eval_strategy.evaluate(
             knn_model,
             X.values,
@@ -257,16 +279,19 @@ def main():
             **evaluation_kwargs
         )
 
-        salva_risultati_csv(results, method_name)
-        salva_plot_confusion_matrix(results, method_name)
+        salva_risultati_csv(results, method_name) # Salvo le metriche.
+        salva_plot_confusion_matrix(results, method_name) # Salvo il grafico.
 
         print("\n=== RISULTATI ===")
 
         medie = results.get('mean', {})
+        # Itero sul dizionario delle metriche medie per stamparle a video formattate in maiuscolo.
         for metrica, valore in medie.items():
             print(f"{metrica.upper()}: {valore}")
 
+    # Gestisco errori gravi avvenuti durante il calcolo e la validazione.
     except Exception as e:
+        # Blocco il programma stampando un messaggio di errore.
         print(f"\n[ERRORE CRITICO]: {e}")
         import traceback
         traceback.print_exc()
