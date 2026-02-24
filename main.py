@@ -9,90 +9,121 @@ from Preprocessing.Implementation.PreprocessorImpl import PreprocessorImpl
 from KNNAlgorithm.KnnAlgorithm import KnnAlgorithm
 from EvaluationModel.Factory.EvaluationFactory import EvaluationFactory
 
-
 def visualizza_predizioni(knn_model, X, y, train_ratio=0.7, seed=42):
+
+    """Questa funzione esegue un test visivo rapido per dimostrare il funzionamento del modello. Divide il dataset,
+    addestra il KNN e stampa a video una tabella comparativa tra la classe reale e quella predetta.
+
+    Parametri:
+              knn_model -> Istanza dell'algoritmo KNN da testare.
+              X: DataFrame contenente le features.
+              y: Series contenente le etichette target.
+              train_ratio: Frazione del dataset da usare per il training.
+              seed: Comando per la generazione di numeri casuali, garantisce la riproducibilità dello shuffle."""
 
     print("\nTEST VISIVO (Reale vs Predetto)\n")
 
+    # Resetta gli indici di X e y per evitare problemi di disallineamento durante lo slicing.
     X = X.reset_index(drop=True)
     y = y.reset_index(drop=True).astype(int)
 
-    num_righe = len(X)
-    indici = np.arange(num_righe)
+    num_righe = len(X) # Calcolo il numero totale di campioni nel dataset.
+    indici = np.arange(num_righe) # Creo un array di indici da 0 fino al numero di righe totali meno uno.
 
-    np.random.seed(seed)
-    np.random.shuffle(indici)
+    np.random.seed(seed) # Imposto il seed per rendere l'ordine casuale ripetibile a ogni esecuzione.
+    np.random.shuffle(indici) # Mescolo casualmente l'array degli indici.
 
+    # Riorganizzo X e y applicando gli indici mescolati.
     X = X.iloc[indici]
     y = y.iloc[indici]
 
-    punto_di_taglio = int(num_righe * train_ratio)
+    punto_di_taglio = int(num_righe * train_ratio) # Calcolo l'indice di separazione tra set di addestramento e set di test.
 
+    # Divido i dati usando l'indice calcolato.
     X_train = X.iloc[:punto_di_taglio]
     y_train = y.iloc[:punto_di_taglio]
     X_test = X.iloc[punto_di_taglio:]
     y_test = y.iloc[punto_di_taglio:]
 
+    # Gestisco il caso in cui sia il set di test che il set di train siano vuoti.
     if len(X_test) == 0 or len(X_train) == 0:
+        # Blocco l'esecuzione del programma stampando un messaggio di errore.
         print("Errore: Dataset troppo piccolo per la divisione!")
         return
 
+    # Mostra a video come sono distribuite le classi nei due split.
     print("Distribuzione y_train:", y_train.value_counts().to_dict())
     print("Distribuzione y_test :", y_test.value_counts().to_dict())
 
-    knn_model.fit(X_train, y_train)
-    predictions = knn_model.predict(X_test)
+    knn_model.fit(X_train, y_train) # Addestro il modello sui dati di training.
+    predictions = knn_model.predict(X_test) # Effettuo la classificazione sui dati di test.
 
-    results = pd.DataFrame()
-    results["Reale"] = y_test.values
-    results["Predetto"] = predictions
+    results = pd.DataFrame() # Creo un nuovo DataFrame vuoto per memorizzare i risultati.
+    results["Reale"] = y_test.values # Inserisco la colonna con i valori reali.
+    results["Predetto"] = predictions # Inserisco la colonna con i valori predetti.
 
+    # Usa una list comprehension per valutare riga per riga se la previsione è corretta.
     lista_esiti = [
         "CORRETTO" if reale == predetto else "ERRATO"
         for reale, predetto in zip(results["Reale"], results["Predetto"])
     ]
 
-    results["Esito"] = lista_esiti
-    print(results.to_string())
+    results["Esito"] = lista_esiti # Aggiungo la colonna con l'esito.
+    print(results.to_string()) # Stampo l'intero DataFrame formattato come testo.
 
 
 def salva_risultati_csv(results, method_name, filename="performances/report_performance.csv"):
+    """Questa funzione estrapola le metriche di valutazione generate dall'algoritmo e le salva in modo su un file CSV.
+    Se il file è gia esistente allora aggiunge solamente i nuovi dati, altrimenti ne crea uno nuovo.
 
-    cartella = os.path.dirname(filename)
+    Parametri:
+               results -> Dizionario contenente i risultati ed i parametri calcolati.
+               method_name -> Nome del metodo di valutazione usato.
+               filename: Percorso di destinazione in cui salvare o aggiornare il file CSV."""
+
+    cartella = os.path.dirname(filename) # Estraggo il percorso della cartella dal nome del file.
+
+    # Verifico se la cartella di destinazione esiste prima di poter scrivere il file.
     if cartella and not os.path.exists(cartella):
-        os.makedirs(cartella)
+        os.makedirs(cartella) # Se la condizione if non è verificata creo la cartella.
 
-    metrics = results.get('mean', {})
-    params = results.get('params', {})
+    metrics = results.get('mean', {}) # Recupero il dizionario delle metriche.
+    params = results.get('params', {}) # Recupero il dizionario dei parametri.
 
+    # Gestisco il caso in cui non ci fossero dati da salvare.
     if not metrics:
+        # Blocco l'esecuzione del programma stampando un messaggio di errore.
         print("Nessuna metrica da salvare.")
         return
 
-    dati_riga = {"Method": method_name}
+    dati_riga = {"Method": method_name} # Creo un dizionario con il nome del metodo per la nuova riga CSV.
 
+    # Aggiungo tutti i parametri impostati al dizionario.
     for chiave, valore in params.items():
         dati_riga[chiave] = valore
 
+    # Aggiungo tutte le metriche calcolate al dizionario.
     for chiave, valore in metrics.items():
         dati_riga[chiave] = valore
 
-    df = pd.DataFrame([dati_riga])
+    df = pd.DataFrame([dati_riga]) # Converte il dizionario in un DataFrame di una singola riga.
 
+    # Controllo se il file CSV esiste già all'interno del sistema.
     try:
         file_esiste = os.path.isfile(filename)
 
         df.to_csv(
             filename,
-            mode='a',
-            header=not file_esiste,
-            index=False,
-            sep=';',
+            mode='a', # 'a' sta per append, aggiungo in coda senza cancellare il vecchio contenuto.
+            header=not file_esiste, # Scrivo le intestazioni di colonna solo se il file viene creato nuovo.
+            index=False, # Ometto l'indice di riga generato.
+            sep=';', # Uso il punto e virgola come separatore di colonne.
             decimal=','
         )
 
         print(f"\n[FILE] Performance salvate in: '{filename}'")
 
+    # Blocco il programma in caso di eventuali errori di scrittura, stampando un messaggio di errore.
     except Exception as e:
         print(f"\n[ERRORE] Salvataggio fallito: {e}")
 
@@ -239,7 +270,6 @@ def main():
         print(f"\n[ERRORE CRITICO]: {e}")
         import traceback
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     main()
