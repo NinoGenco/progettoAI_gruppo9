@@ -9,7 +9,7 @@
 5. [EVALUATION](#5-evaluation)
 6. [METRICHE DI VALUTAZIONE](#6-validazione-del-modello-e-metriche-calcolate)
 7. [RISULTATI](#7-risultati)
-8. [ESECUZIONE DEL PROGRAMMA](#8-esecuzione del programma)
+8. [ESECUZIONE DEL PROGRAMMA](#8-esecuzione-del-programma)
 9. [ISTRUZIONI DOCKER](#9-istruzioni-docker)
 10. [CONCLUSIONE](#10-conclusione)
 
