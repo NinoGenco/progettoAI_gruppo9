@@ -59,6 +59,8 @@ def stratified_train_test_split(X, y, test_size=0.2, shuffle=True, seed=42):
     counts = {lab: len(idx_by_class[lab]) for lab in labels}
 
     # Quota di test per classe proporzionale alla numerosità della classe
+    # Per ogni classe, conta quanti campioni ha counts[lab], prende la % di test_size
+    # Ovvero calcola quanti elementi, per classe, devono andare nel test
     n_test = {}
     for lab in labels:
         n_test[lab] = int(round(counts[lab] * test_size))
@@ -71,6 +73,8 @@ def stratified_train_test_split(X, y, test_size=0.2, shuffle=True, seed=42):
 
     # la somma delle quote per classe deve tornare esattamente a n_test_total
     current = sum(n_test.values())
+
+    # i due 'while' servono solo per assicurare: somma test di tutte le classi = n_test_total
 
     # Se mancano elementi, li assegna alla classe con più elementi residui disponibili
     while current < n_test_total:
@@ -97,6 +101,7 @@ def stratified_train_test_split(X, y, test_size=0.2, shuffle=True, seed=42):
     test_idx = []
     train_idx = []
 
+    # i dati vengono separati mantenendo la proporzione.
     for lab in labels:
         k = n_test[lab]
         test_part = idx_by_class[lab][:k]
