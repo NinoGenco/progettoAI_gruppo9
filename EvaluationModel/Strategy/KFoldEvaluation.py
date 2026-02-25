@@ -113,7 +113,7 @@ class KFoldEvaluation(EvaluationStrategy):
         if n_splits < 2:
             raise ValueError("n_splits deve essere >= 2")
 
-        # Costruisce la lista dei fold come indici
+        # Costruisce la lista dei fold come indici che andranno nel test
         folds = k_fold_split_indices(n, n_splits=n_splits, shuffle=shuffle, seed=seed)
 
         # Accumulatori:
@@ -148,7 +148,7 @@ class KFoldEvaluation(EvaluationStrategy):
                 '''Guardia fondamentale, soprattutto per LOO:
                 in LOO len(X_train) = n-1, k non può superare i dati disponibili
                 '''
-
+                # per fare il voto devi avere almeno k punti nel train, importante soprattutto in LOO o dataset piccoli.
                 raise ValueError(
                     f"k_neighbors={k_neighbors} non può essere > del training set nel fold {fold_idx} "
                     f"(len(X_train)={len(X_train)})"
@@ -168,7 +168,7 @@ class KFoldEvaluation(EvaluationStrategy):
                 raise RuntimeError("predict() deve ritornare una label per ogni sample di test")
 
             # Calcola uno score continuo per ROC/AUC:
-            # Score continuo  = NON binario + ordinabile + misura quanto il modello è convinto
+            # Score continuo che rappresenti quanto il modello “spinge” verso la classe positiva -> misura quanto il modello è convinto
             # necessario per ROC/AUC, è un valore numerico ordinabile che misura il grado di appartenenza
             # alla classe positiva (proporzione di vicini positivi nel KNN), permettendo di variare la soglia decisionale
             # e costruire la curva ROC
@@ -181,6 +181,8 @@ class KFoldEvaluation(EvaluationStrategy):
             # predizioni di tutto il dataset
 
             # Accumulo globale: serve per metriche globali e AUC su tutto il dataset
+
+            # Aggiunge tutte le y vere di questo fold a una lista globale.
             y_true_all.extend(y_test)
 
             # Normalizza y_pred e y_score a liste Python (supporta anche numpy array)
@@ -190,23 +192,20 @@ class KFoldEvaluation(EvaluationStrategy):
             y_score_all.extend(y_score_list)
 
             # ---------- metriche fold-level SENZA AUC se fold non binario ----------
-            # calcolo confusion + metriche base sempre definite
 
+            # Fold non binario: niente ROC/AUC
             tp, tn, fp, fn = confusion_binary(y_test, y_pred_list, positive_label=positive_label)
 
-            # Metriche fold-level sempre definibili (AUC esclusa quando il fold non contiene entrambe le classi)
             acc = safe_div(tp + tn, tp + tn + fp + fn)
             err = 1.0 - acc
-            sensitivity = safe_div(tp, tp + fn) # TPR
-            specificity = safe_div(tn, tn + fp) # TNR
+            sensitivity = safe_div(tp, tp + fn)  # TPR
+            specificity = safe_div(tn, tn + fp)  # TNR
             gmean = (sensitivity * specificity) ** 0.5
 
-            # AUC fold-level: definita solo se nel test set del fold sono presenti entrambe le classi
             if len(set(y_test)) == 2:
-                m_full = metrics_binary(y_test, y_pred_list, y_score_list, positive_label=positive_label)
+                m_full = metrics_binary(y_test, y_pred_list, positive_label=positive_label)
                 auc_fold = m_full["auc"]
             else:
-                # Proprietà: ROC/AUC non è definita se manca una delle due classi
                 auc_fold = None
 
             per_run.append({
@@ -215,19 +214,30 @@ class KFoldEvaluation(EvaluationStrategy):
                 "sensitivity": sensitivity,
                 "specificity": specificity,
                 "gmean": gmean,
-                "auc": auc_fold,   # None in LOO, numero in KFold normale (quasi sempre)
+                "auc": auc_fold,  # None in LOO, numero in KFold normale (quasi sempre)
                 "tp": tp,
                 "tn": tn,
                 "fp": fp,
                 "fn": fn,
             })
 
+        # FINE LOOP INTERNO
+
         # ---------- mean fold-level ----------
         # mean_metrics() ignora i None, L’AUC finale diventa la media solo dei fold validi
         mean_m = mean_metrics(per_run)
 
         # ---------- AUC globale su tutte le predizioni accumulate (sempre definibile se y_true è binario)----------
+        # global_m serve a calcolare le metriche su tutte le predizioni accumulate insieme, non fold per fold
+        # serve per avere una AUC globale stabile:
+        #  PERCHE' ?
+
+        # 1) alcuni fold hanno NONE (quasi sempre in LOO)
+        # 2) AUC non è una metrica lineare → la media delle AUC dei fold non è uguale all’AUC sull’intero dataset
+        # 3) Nei fold piccoli (es. LOO) l’AUC fold-level è instabile o impossibile
         global_m = metrics_binary(y_true_all, y_pred_all, y_score_all, positive_label=positive_label)
+
+        # tutte le altre metriche sono additive sulla confusion matrix, auc no
         mean_m["auc"] = global_m["auc"]
 
         return {

@@ -1,5 +1,9 @@
 # in testing
-# LOO = K-Fold, se n_splits = n
+# LOO = K-Fold, se K = n_splits = n  E ogni fold ha 1 elemento in test
+
+# con n_splits = n e distribuzione round-robin,
+# per ogni i vale i % n = i, quindi ogni fold riceve esattamente un indice
+# è come fare i = 0,1,2,...,n-1 /n , il resto è i -> ogni numero finisce in un fold nuovo
 
 # CONCETTUALMENTE: (LEGGI COMMENTO SOTTO)
 
@@ -26,7 +30,9 @@ class LeaveOneOutEvaluation(EvaluationStrategy):
 
     def evaluate(self, model, X, y, k_neighbors: int, **kwargs) -> dict:
 
-        # 1️⃣ Esegui K-Fold con n_splits = n
+        # K-Fold con n_splits = n
+        # Con LOO non serve shuffle: ogni campione verrà testato comunque una volta
+
         result = KFoldEvaluation().evaluate(
             model, X, y,
             k_neighbors=k_neighbors,
@@ -36,14 +42,18 @@ class LeaveOneOutEvaluation(EvaluationStrategy):
             positive_label=kwargs.get("positive_label", 4),
         )
 
+        # una predizione per ogni campione (perché ogni campione è stato testato una volta)
         y_true = result["y_true"]
         y_pred = result["y_pred"]
 
-        # 2️⃣ Calcola confusion globale
-        tp, tn, fp, fn = confusion_binary(
-            y_true, y_pred,
-            positive_label=kwargs.get("positive_label", 4)
-        )
+        # Calcola confusion sull’insieme totale dei test
+        # (che coincide con tutto il dataset testato una volta ciascuno)
+
+        tp, tn, fp, fn = confusion_binary(y_true, y_pred, positive_label=kwargs.get("positive_label", 4))
+
+
+        # METRICHE GLOBALI
+        # calcolate su n predizioni totali, non su fold da 1
 
         acc = safe_div(tp + tn, tp + tn + fp + fn)
         err = 1.0 - acc
@@ -51,15 +61,9 @@ class LeaveOneOutEvaluation(EvaluationStrategy):
         spec = safe_div(tn, tn + fp)
         gmean = (sens * spec) ** 0.5
 
-        # 3️⃣ AUC globale
-        y_score = result["mean"]["auc"]  # oppure ricalcolala da score se preferisci
+        # AUC globale, riusa l'AUC globale già calcolata in KFoldEvaluation
 
-        metrics_global = metrics_binary(
-            y_true,
-            y_pred,
-            result["y_pred"],  # meglio usare score reali se disponibili
-            positive_label=kwargs.get("positive_label", 4)
-        )
+        auc_global = result["mean"]["auc"]
 
         return {
             "method": "loo",
@@ -73,7 +77,7 @@ class LeaveOneOutEvaluation(EvaluationStrategy):
                 "sensitivity": sens,
                 "specificity": spec,
                 "gmean": gmean,
-                "auc": metrics_global["auc"],
+                "auc": auc_global,
                 "tp": tp,
                 "tn": tn,
                 "fp": fp,
