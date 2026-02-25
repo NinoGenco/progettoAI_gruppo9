@@ -62,14 +62,17 @@ def roc_curve(y_true, y_score, positive_label=4):
     if positive_label not in labels:
         raise ValueError("positive_label non presente in y_true")
 
+    # Per fare la ROC, è necessario sapere chi è positivo e chi è negativo
     negative_label = labels[0] if labels[1] == positive_label else labels[1]
 
-    # Thresholds: valori unici degli score (dal più alto al più basso)
+    # Thresholds:
+    # Prende tutti gli score unici (soglie candidate) dal più alto al più basso
     #  +inf e -inf per includere estremi della curva
 
     thresholds = sorted(set(y_score), reverse=True)
     thresholds = [float("inf")] + thresholds + [float("-inf")]
 
+    # accumula i punti della curva
     fpr_list, tpr_list = [], []
 
     # Per ogni soglia, trasforma score in predizione binaria e calcola (FPR,TPR)
@@ -77,6 +80,7 @@ def roc_curve(y_true, y_score, positive_label=4):
         tp = tn = fp = fn = 0
 
         for t, s in zip(y_true, y_score):
+            # cambiare soglia cambia quanta roba predici positiva
             pred = positive_label if s >= thresh else negative_label
 
             if t == positive_label and pred == positive_label:
@@ -102,12 +106,13 @@ def roc_curve(y_true, y_score, positive_label=4):
 def auc_trapezoid(fpr: List[float], tpr: List[float]) -> float:
     """
     Calcolo AUC con regola del trapezio.
-    Assunzione: fpr ordinato in modo crescente.
+    Assunzione: fpr ordinato in modo crescente, dove i punti sono (x = FPR, y = TPR).
+    Immagina un trapezio rettangolo con le basi parallele all'asse verticale di un piano cartesiano
     """
     auc = 0.0
     for i in range(1, len(fpr)):
-        x1, x2 = fpr[i - 1], fpr[i]
-        y1, y2 = tpr[i - 1], tpr[i]
+        x1, x2 = fpr[i - 1], fpr[i] # x2 -x1 è l'altezza del trapezio
+        y1, y2 = tpr[i - 1], tpr[i] # y1 e y2 sono le basi
         auc += (x2 - x1) * (y1 + y2) / 2.0
     return auc
 
